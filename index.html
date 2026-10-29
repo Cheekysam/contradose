@@ -1,0 +1,2838 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CONTRADOSE — Clinical Contraindication Matrix</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root[data-theme="light"] {
+      --bg: #FFFFFF;
+      --fg: #000000;
+      --border: #E5E5E5;
+      --muted: #666666;
+      --subtle-bg: #FAFAFA;
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #000000;
+      --fg: #FFFFFF;
+      --border: #222222;
+      --muted: #888888;
+      --subtle-bg: #0A0A0A;
+    }
+
+    * {
+      box-sizing: border-box;
+      border-color: var(--border);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg);
+      color: var(--fg);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .mono-border {
+      border: 1px solid var(--border);
+    }
+
+    .mono-border-strong {
+      border: 1px solid var(--fg);
+    }
+
+    .mono-border-t { border-top: 1px solid var(--border); }
+    .mono-border-b { border-bottom: 1px solid var(--border); }
+    .mono-border-l { border-left: 1px solid var(--border); }
+    .mono-border-r { border-right: 1px solid var(--border); }
+
+    .btn-mono {
+      background-color: var(--bg);
+      color: var(--fg);
+      border: 1px solid var(--border);
+      transition: background-color 0.1s ease, color 0.1s ease, border-color 0.1s ease;
+      cursor: pointer;
+    }
+
+    .btn-mono:hover:not(:disabled) {
+      background-color: var(--fg);
+      color: var(--bg);
+      border-color: var(--fg);
+    }
+
+    .btn-mono:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn-mono-invert {
+      background-color: var(--fg);
+      color: var(--bg);
+      border: 1px solid var(--fg);
+      transition: opacity 0.1s ease;
+      cursor: pointer;
+    }
+
+    .btn-mono-invert:hover:not(:disabled) {
+      opacity: 0.85;
+    }
+
+    .btn-mono-invert:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-mono-active {
+      background-color: var(--fg);
+      color: var(--bg);
+      border-color: var(--fg);
+    }
+
+    input.mono-input, textarea.mono-input, select.mono-input {
+      background-color: var(--bg);
+      color: var(--fg);
+      border: 1px solid var(--fg);
+      outline: none;
+    }
+
+    input.mono-input::placeholder, textarea.mono-input::placeholder {
+      color: var(--muted);
+    }
+
+    .muted-text {
+      color: var(--muted);
+    }
+
+    .subtle-fill {
+      background-color: var(--subtle-bg);
+    }
+
+    @keyframes pulse-mono {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+
+    .animate-pulse-mono {
+      animation: pulse-mono 1.6s infinite ease-in-out;
+    }
+
+    /* Zero scrollbar clutter */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--fg);
+    }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen select-none">
+
+  <!-- ==================== TOP MINIMALIST BAR ==================== -->
+  <header class="mono-border-b w-full">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+      
+      <!-- Brand & Mode Switcher -->
+      <div class="flex items-center gap-3 sm:gap-4">
+        <span class="font-mono font-bold tracking-tighter text-base uppercase">CONTRADOSE</span>
+        <span class="muted-text font-mono text-xs hidden sm:inline">/</span>
+        <div class="flex items-center font-mono text-[11px] sm:text-xs">
+          <button id="btnModeSolo" type="button" class="px-2 sm:px-2.5 py-1 mono-border btn-mono-active">SOLO</button>
+          <button id="btnModeMulti" type="button" class="px-2 sm:px-2.5 py-1 mono-border border-l-0 btn-mono">PASS &amp; PLAY</button>
+          <button id="btnModeParty" type="button" class="px-2 sm:px-2.5 py-1 mono-border border-l-0 btn-mono">ONLINE PARTY</button>
+        </div>
+        <div id="quickPartyButtonsWrap" class="hidden xl:flex items-center gap-1.5 font-mono text-[11px]">
+          <button id="btnQuickCreateParty" type="button" class="px-2 py-0.5 mono-border btn-mono" title="Create an Online Party Room">[+ CREATE PARTY]</button>
+          <button id="btnQuickJoinParty" type="button" class="px-2 py-0.5 mono-border btn-mono" title="Join a Friend's Party Code">[JOIN PARTY]</button>
+        </div>
+        <button id="btnConfigPlayers" type="button" class="hidden font-mono text-[11px] underline muted-text hover:text-[var(--fg)]">
+          [ROSTER]
+        </button>
+        <button id="btnConfigRTDB" type="button" class="hidden font-mono text-[11px] underline muted-text hover:text-[var(--fg)]" title="Configure Firebase RTDB for GitHub Pages">
+          [RTDB CONFIG]
+        </button>
+      </div>
+
+      <!-- Center Stats Strip -->
+      <div class="hidden md:flex items-center gap-6 font-mono text-xs">
+        <div id="uiTopRoomWrap" class="hidden">
+          <span class="muted-text">ROOM</span>
+          <span id="uiTopRoomCode" class="font-bold ml-1">-----</span>
+        </div>
+        <div>
+          <span class="muted-text">CASE</span>
+          <span id="uiCaseNum" class="font-bold ml-1">001</span>
+        </div>
+        <div id="uiSoloStreakWrap">
+          <span class="muted-text">STREAK</span>
+          <span id="uiStreak" class="font-bold ml-1">0</span>
+        </div>
+        <div id="uiSoloAccWrap">
+          <span class="muted-text">ACC</span>
+          <span id="uiAccuracy" class="font-bold ml-1">100%</span>
+        </div>
+        <div id="uiMultiTurnWrap" class="hidden">
+          <span class="muted-text">ACTIVE</span>
+          <span id="uiActivePlayer" class="font-bold ml-1 underline">DR. 1</span>
+        </div>
+        <div>
+          <span class="muted-text">SCORE</span>
+          <span id="uiScore" class="font-bold ml-1">0</span>
+        </div>
+      </div>
+
+      <!-- Right Controls: Input Mode & Theme -->
+      <div class="flex items-center gap-2 font-mono text-xs">
+        <div class="flex items-center">
+          <button id="btnInputCards" class="px-2.5 py-1 mono-border btn-mono-active" title="Multiple Choice Cards">CARDS</button>
+          <button id="btnInputType" class="px-2.5 py-1 mono-border border-l-0 btn-mono" title="Type-in Command Input">TYPE</button>
+        </div>
+        <button id="btnThemeToggle" class="px-2.5 py-1 mono-border btn-mono uppercase" title="Toggle Pure Black/White Theme">
+          W/B
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Mobile Stats Sub-bar -->
+    <div class="md:hidden mono-border-t px-4 py-2 flex items-center justify-between font-mono text-[11px]">
+      <div><span class="muted-text">CASE:</span> <span id="uiCaseNumMob" class="font-bold">001</span></div>
+      <div id="uiMobCenterStat"><span class="muted-text">STREAK:</span> <span id="uiStreakMob" class="font-bold">0</span></div>
+      <div><span class="muted-text">SCORE:</span> <span id="uiScoreMob" class="font-bold">0</span></div>
+    </div>
+  </header>
+
+  <!-- ==================== PASS & PLAY SCOREBOARD STRIP ==================== -->
+  <div id="multiScoreStrip" class="hidden mono-border-b subtle-fill">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-2 flex flex-wrap items-center justify-between gap-4 font-mono text-xs">
+      <div id="multiPlayersList" class="flex flex-wrap items-center gap-6">
+        <!-- Injected dynamically -->
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="muted-text text-[11px]">SABOTAGE PROTOCOL:</span>
+        <button id="btnTriggerSabotage" class="px-2 py-0.5 mono-border btn-mono text-[11px]">
+          [+ INJECT COMPLICATION]
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== ONLINE PARTY LIVE STATUS STRIP ==================== -->
+  <div id="partyLiveStrip" class="hidden mono-border-b subtle-fill">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-4 font-mono text-xs">
+      <div class="flex items-center gap-3">
+        <span class="px-2 py-0.5 mono-border font-bold" id="partyStripRoomTag">RM: -----</span>
+        <div id="partyLivePlayersList" class="flex flex-wrap items-center gap-4">
+          <!-- Dynamically populated connected players + live status -->
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="btnPartySabotage" class="px-2.5 py-1 mono-border btn-mono text-[11px]">
+          [+ DEPLOY SABOTAGE]
+        </button>
+        <button id="btnLeavePartyBanner" class="px-2.5 py-1 mono-border btn-mono text-[11px] muted-text hover:text-[var(--fg)]">
+          [LEAVE]
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== ONLINE PARTY HUB & LOBBY CONTAINER ==================== -->
+  <section id="partyHubContainer" class="hidden flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-8 flex flex-col justify-center">
+    
+    <!-- STEP 1: CREATE OR JOIN PARTY -->
+    <div id="partyEntryView" class="max-w-3xl mx-auto w-full mono-border">
+      <div class="mono-border-b px-5 py-3 flex items-center justify-between font-mono text-xs subtle-fill">
+        <span class="font-bold uppercase">ONLINE PARTY // REALTIME CLINICAL MATRIX</span>
+        <span id="rtdbConnBadge" class="px-2 py-0.5 mono-border text-[10px] uppercase">RTDB READY</span>
+      </div>
+
+      <div class="p-6 space-y-6 font-mono text-xs">
+        <!-- Split Grid: Create vs Join -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Create Party Column -->
+          <div class="mono-border p-5 flex flex-col justify-between space-y-5 subtle-fill">
+            <div class="space-y-4">
+              <div>
+                <div class="text-[10px] muted-text uppercase tracking-wider">HOST NEW SESSION</div>
+                <div class="text-sm font-bold mt-0.5">CREATE CLINICAL PARTY</div>
+              </div>
+
+              <div>
+                <label class="block muted-text text-[10px] uppercase mb-1">HOST PHYSICIAN CALLSIGN</label>
+                <input type="text" id="partyCreateCallsignInput" maxlength="16" placeholder="e.g. DR. VANCE" value="DR. VANCE"
+                       class="mono-input w-full px-3 py-2 text-xs font-bold uppercase">
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block muted-text text-[10px] uppercase mb-1">CASE COUNT</label>
+                  <select id="createCasesSelect" class="mono-input w-full px-2.5 py-2 text-xs font-mono">
+                    <option value="5">5 CASES</option>
+                    <option value="10" selected>10 CASES</option>
+                    <option value="15">15 CASES</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block muted-text text-[10px] uppercase mb-1">SABOTAGE PROTOCOL</label>
+                  <select id="createSabotageSelect" class="mono-input w-full px-2.5 py-2 text-xs font-mono">
+                    <option value="enabled" selected>ENABLED</option>
+                    <option value="disabled">DISABLED</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <button id="btnCreatePartyRoom" type="button" class="btn-mono-invert w-full py-3 text-xs font-bold uppercase tracking-wider">
+              [ CREATE PARTY -&gt; ]
+            </button>
+          </div>
+
+          <!-- Join Party Column -->
+          <div class="mono-border p-5 flex flex-col justify-between space-y-5 subtle-fill">
+            <div class="space-y-4">
+              <div>
+                <div class="text-[10px] muted-text uppercase tracking-wider">CONNECT TO PEER SESSION</div>
+                <div class="text-sm font-bold mt-0.5">JOIN PARTY BY CODE</div>
+              </div>
+
+              <div>
+                <label class="block muted-text text-[10px] uppercase mb-1">GUEST PHYSICIAN CALLSIGN</label>
+                <input type="text" id="partyJoinCallsignInput" maxlength="16" placeholder="e.g. DR. CHEN" value="DR. CHEN"
+                       class="mono-input w-full px-3 py-2 text-xs font-bold uppercase">
+              </div>
+
+              <div>
+                <label class="block muted-text text-[10px] uppercase mb-1">5-CHARACTER ROOM CODE</label>
+                <input type="text" id="partyJoinCodeInput" maxlength="6" placeholder="ENTER 5-CHAR CODE"
+                       class="mono-input w-full px-3 py-2 text-xs font-bold uppercase tracking-widest text-center">
+              </div>
+            </div>
+
+            <button id="btnJoinPartyRoom" type="button" class="btn-mono w-full py-3 text-xs font-bold uppercase tracking-wider">
+              [ JOIN PARTY -&gt; ]
+            </button>
+          </div>
+        </div>
+
+        <!-- Status / Error Message Strip -->
+        <div id="partyEntryFeedback" class="hidden mono-border p-3 text-xs"></div>
+
+        <!-- Footer Info for GitHub Pages / RTDB -->
+        <div class="mono-border-t pt-4 flex flex-wrap items-center justify-between gap-2 text-[11px] muted-text">
+          <span id="rtdbEndpointLabel">SYNC ENGINE: MULTI-TAB &amp; FIREBASE RTDB</span>
+          <button id="btnOpenRTDBFromHub" type="button" class="underline hover:text-[var(--fg)]">[CONFIGURE RTDB URL / KEYS]</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2: ACTIVE LOBBY WAITING ROOM -->
+    <div id="partyLobbyView" class="hidden max-w-3xl mx-auto w-full mono-border">
+      <div class="mono-border-b px-5 py-3 flex flex-wrap items-center justify-between gap-2 font-mono text-xs subtle-fill">
+        <div class="flex items-center gap-2">
+          <span class="font-bold uppercase">PARTY WAITING ROOM LOBBY</span>
+          <span id="lobbySyncModeBadge" class="px-2 py-0.5 mono-border text-[10px] uppercase">LOCAL MULTI-TAB SYNC</span>
+        </div>
+        <button id="btnLeaveLobby" type="button" class="text-xs underline muted-text hover:text-[var(--fg)]">[LEAVE PARTY]</button>
+      </div>
+
+      <!-- Room Code Banner -->
+      <div class="p-6 mono-border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <div class="font-mono text-[10px] uppercase muted-text tracking-wider">PARTY ROOM ACCESS CODE</div>
+          <div class="flex items-center gap-3 mt-1">
+            <span id="lobbyRoomCodeDisplay" class="font-mono text-3xl font-bold tracking-widest">-----</span>
+            <button id="btnCopyRoomCode" type="button" class="btn-mono px-3 py-1.5 font-mono text-xs uppercase">
+              [COPY CODE]
+            </button>
+          </div>
+        </div>
+
+        <!-- Match Parameters -->
+        <div class="flex flex-wrap items-center gap-3 font-mono text-xs">
+          <div>
+            <span class="block text-[10px] muted-text uppercase mb-1">TOTAL CASES</span>
+            <select id="lobbyRoundsSelect" class="mono-border px-2.5 py-1.5 bg-[var(--bg)] text-[var(--fg)] font-mono text-xs">
+              <option value="5">5 CASES (SPRINT)</option>
+              <option value="10" selected>10 CASES (STANDARD)</option>
+              <option value="15">15 CASES (BOARD EXAM)</option>
+            </select>
+          </div>
+          <div>
+            <span class="block text-[10px] muted-text uppercase mb-1">SABOTAGE</span>
+            <select id="lobbySabotageSelect" class="mono-border px-2.5 py-1.5 bg-[var(--bg)] text-[var(--fg)] font-mono text-xs">
+              <option value="enabled" selected>ENABLED (1x/MATCH)</option>
+              <option value="disabled">DISABLED</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Connected Roster Grid -->
+      <div class="p-6 space-y-4 font-mono">
+        <div class="flex items-center justify-between text-xs">
+          <span class="uppercase muted-text tracking-wider">CONNECTED PHYSICIAN ROSTER (<span id="lobbyPlayerCount">1</span>)</span>
+          <span class="text-[11px] muted-text">CALLSIGN // ROLE // STATUS</span>
+        </div>
+        <div id="lobbyRosterGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <!-- Injected Player Cards -->
+        </div>
+      </div>
+
+      <!-- Lobby Action Footer -->
+      <div class="mono-border-t px-6 py-4 subtle-fill flex flex-wrap items-center justify-between gap-4 font-mono text-xs">
+        <span id="lobbyWaitStatus" class="muted-text">Host can launch the clinical trial once all physicians are connected.</span>
+        <button id="btnStartPartyMatch" type="button" class="btn-mono-invert px-6 py-3 font-bold uppercase tracking-wider">
+          [ LAUNCH CLINICAL TRIAL -&gt; ]
+        </button>
+      </div>
+    </div>
+
+    <!-- STEP 3: END-OF-MATCH CLINICAL BOARD SUMMARY -->
+    <div id="partySummaryView" class="hidden max-w-3xl mx-auto w-full mono-border font-mono">
+      <div class="mono-border-b px-5 py-3 flex items-center justify-between text-xs subtle-fill">
+        <span class="font-bold uppercase">PARTY CLINICAL BOARD STANDINGS</span>
+        <span id="summaryRoomTag" class="muted-text">ROOM: -----</span>
+      </div>
+
+      <div class="p-6 space-y-6">
+        <div class="space-y-1">
+          <div class="text-[10px] muted-text uppercase">CHAMPION ATTENDING PHYSICIAN</div>
+          <div id="summaryWinnerHeadline" class="text-2xl font-bold uppercase tracking-tight">DR. VANCE</div>
+        </div>
+
+        <div id="summaryStandingsList" class="mono-border divide-y divide-[var(--border)] text-xs">
+          <!-- Populated final standings -->
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+          <button id="btnReturnToLobby" type="button" class="btn-mono-invert px-5 py-2.5 text-xs font-bold uppercase">
+            [ PLAY AGAIN IN ROOM ]
+          </button>
+          <button id="btnExitPartyComplete" type="button" class="btn-mono px-4 py-2.5 text-xs uppercase">
+            [ LEAVE PARTY ]
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ==================== MAIN WORKSPACE ==================== -->
+  <main id="mainGameWorkspace" class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-8 flex flex-col justify-between gap-8">
+
+    <!-- ACTIVE SABOTAGE ALERT STRIP -->
+    <div id="sabotageAlert" class="hidden mono-border p-3 flex items-center justify-between font-mono text-xs">
+      <div>
+        <span class="font-bold uppercase">[ADVERSE MODIFIER ACTIVE]</span>
+        <span id="sabotageDesc" class="ml-2">ACUTE RENAL SPIKE: eGFR dropped critically.</span>
+      </div>
+      <span id="sabotageByLabel" class="muted-text uppercase">SABOTAGE IN PLAY</span>
+    </div>
+
+    <!-- CLINICAL DOSSIER GRID -->
+    <section class="mono-border">
+      
+      <!-- Dossier Top Metadata Row -->
+      <div class="mono-border-b px-5 py-3 flex flex-wrap items-center justify-between gap-2 font-mono text-xs subtle-fill">
+        <div class="flex items-center gap-3">
+          <span id="ptId" class="font-bold">PT-8492</span>
+          <span class="muted-text">|</span>
+          <span id="ptDemo">68Y MALE</span>
+          <span class="muted-text">|</span>
+          <span id="ptSpecialty" class="uppercase">CARDIOLOGY</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="muted-text">ACUITY LEVEL:</span>
+          <span id="ptComplexity" class="font-bold">II / IV</span>
+        </div>
+      </div>
+
+      <!-- Primary Indication / Chief Presentation -->
+      <div class="p-5 sm:p-6 mono-border-b">
+        <div class="font-mono text-[11px] uppercase muted-text mb-1.5 tracking-wider">PRIMARY CLINICAL PRESENTATION &amp; INDICATION</div>
+        <h1 id="ptPresentation" class="text-lg sm:text-xl font-semibold tracking-tight leading-snug">
+          Loading clinical dossier...
+        </h1>
+      </div>
+
+      <!-- Vitals Strip (5 Columns) -->
+      <div class="grid grid-cols-2 sm:grid-cols-5 mono-border-b font-mono">
+        <div class="p-3.5 sm:p-4 mono-border-b sm:border-b-0 mono-border-r">
+          <div class="text-[10px] muted-text uppercase">BP (mmHg)</div>
+          <div id="vBP" class="text-sm font-bold mt-1">142/88</div>
+        </div>
+        <div class="p-3.5 sm:p-4 mono-border-b sm:border-b-0 sm:mono-border-r">
+          <div class="text-[10px] muted-text uppercase">HR (bpm)</div>
+          <div id="vHR" class="text-sm font-bold mt-1">78</div>
+        </div>
+        <div class="p-3.5 sm:p-4 mono-border-b sm:border-b-0 mono-border-r">
+          <div class="text-[10px] muted-text uppercase">RR (/min)</div>
+          <div id="vRR" class="text-sm font-bold mt-1">16</div>
+        </div>
+        <div class="p-3.5 sm:p-4 mono-border-b sm:border-b-0 sm:mono-border-r">
+          <div class="text-[10px] muted-text uppercase">TEMP (°C)</div>
+          <div id="vTemp" class="text-sm font-bold mt-1">37.0</div>
+        </div>
+        <div class="p-3.5 sm:p-4 col-span-2 sm:col-span-1">
+          <div class="text-[10px] muted-text uppercase">SpO2 (%)</div>
+          <div id="vSpO2" class="text-sm font-bold mt-1">98%</div>
+        </div>
+      </div>
+
+      <!-- Laboratory Panel Strip (6 Columns) -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 mono-border-b font-mono">
+        <div class="p-3.5 sm:p-4 mono-border-b md:border-b-0 mono-border-r">
+          <div class="text-[10px] muted-text uppercase">eGFR</div>
+          <div id="lGFR" class="text-xs font-bold mt-1">82 mL/min</div>
+        </div>
+        <div class="p-3.5 sm:p-4 mono-border-b md:border-b-0 sm:mono-border-r">
+          <div class="text-[10px] muted-text uppercase">K+ (mEq/L)</div>
+          <div id="lK" class="text-xs font-bold mt-1">4.2</div>
+        </div>
+        <div class="p-3.5 sm:p-4 mono-border-b md:border-b-0 mono-border-r">
+          <div class="text-[10px] muted-text uppercase">Na+ (mEq/L)</div>
+          <div id="lNa" class="text-xs font-bold mt-1">139</div>
+        </div>
+        <div class="p-3.5 sm:p-4 mono-border-b sm:border-b-0 md:mono-border-r">
+          <div class="text-[10px] muted-text uppercase">PLT (/µL)</div>
+          <div id="lPlt" class="text-xs font-bold mt-1">245k</div>
+        </div>
+        <div class="p-3.5 sm:p-4 mono-border-r">
+          <div class="text-[10px] muted-text uppercase">AST/ALT</div>
+          <div id="lLFT" class="text-xs font-bold mt-1">22/19 U/L</div>
+        </div>
+        <div class="p-3.5 sm:p-4">
+          <div class="text-[10px] muted-text uppercase">INR</div>
+          <div id="lINR" class="text-xs font-bold mt-1">1.0</div>
+        </div>
+      </div>
+
+      <!-- Active Comorbidities & Allergies -->
+      <div class="p-5 sm:p-6">
+        <div class="font-mono text-[11px] uppercase muted-text mb-3 tracking-wider">ACTIVE COMORBIDITIES, HISTORY &amp; CONTRAINDICATION FLAGS</div>
+        <div id="ptComorbidities" class="flex flex-wrap gap-2 font-mono text-xs">
+          <!-- Injected flags -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ==================== PRESCRIPTION SELECTION AREA ==================== -->
+    <section id="prescriptionSection" class="space-y-3">
+      <div class="flex items-center justify-between font-mono text-xs">
+        <span class="uppercase muted-text tracking-wider">SELECT PHARMACOTHERAPY INTERVENTION</span>
+        <span id="inputHintText" class="muted-text text-[11px]">[CLICK CARD OR PRESS 1-4]</span>
+      </div>
+
+      <!-- MODE A: 4-CARD MINIMALIST GRID -->
+      <div id="cardsInputGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <!-- Dynamically populated 4 cards -->
+      </div>
+
+      <!-- MODE B: COMMAND-LINE TYPE-IN WITH LIVE AUTOCOMPLETE -->
+      <div id="typeInputContainer" class="hidden relative font-mono">
+        <div class="flex items-center">
+          <span class="px-3.5 py-3 mono-border border-r-0 text-xs font-bold subtle-fill">Rx &gt;</span>
+          <input type="text" id="rxCommandInput" autocomplete="off"
+                 placeholder="Type medication generic name or class (e.g., Lisinopril, Apixaban, Metoprolol)..."
+                 class="mono-input w-full px-3.5 py-3 text-xs">
+        </div>
+        <div id="rxAutocompleteList" class="hidden mono-border border-t-0 max-h-60 overflow-y-auto divide-y divide-[var(--border)]">
+          <!-- Populated on keystroke -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== INLINE CLINICAL OUTCOME PANEL ==================== -->
+    <section id="outcomePanel" class="hidden mono-border p-5 sm:p-6 space-y-5 subtle-fill">
+      <div class="flex flex-wrap items-baseline justify-between gap-2 mono-border-b pb-4">
+        <div class="font-mono">
+          <span id="outVerdictTag" class="text-xs font-bold uppercase px-2 py-0.5 mono-border mr-2">OPTIMAL</span>
+          <span id="outDrugTitle" class="text-base font-bold">Lisinopril (ACE Inhibitor)</span>
+        </div>
+        <div id="outScoreDelta" class="font-mono text-sm font-bold">+150 PTS</div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 font-mono text-xs leading-relaxed">
+        <div>
+          <div class="muted-text uppercase text-[10px] mb-1">INDICATION &amp; EFFICACY ANALYSIS</div>
+          <p id="outIndicationText">Direct therapeutic match for primary diagnosis.</p>
+        </div>
+        <div>
+          <div class="muted-text uppercase text-[10px] mb-1">SAFETY &amp; CONTRAINDICATION ENGINE</div>
+          <p id="outSafetyText">No hemodynamic, laboratory, or comorbid contraindications violated.</p>
+        </div>
+      </div>
+
+      <!-- ONLINE PARTY LIVE ROUND SUBMISSIONS TABLE -->
+      <div id="partyRoundSubmissionsBox" class="hidden mono-border-t pt-4 space-y-2 font-mono text-xs">
+        <div class="flex items-center justify-between">
+          <span class="muted-text uppercase text-[10px]">PARTY ROUND TELEMETRY &amp; SUBMISSIONS</span>
+          <span id="partySubCountStatus" class="text-[11px] font-bold">WAITING FOR PEERS...</span>
+        </div>
+        <div id="partyRoundSubList" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <!-- Injected peer results -->
+        </div>
+      </div>
+
+      <div class="pt-2 flex items-center justify-between gap-4">
+        <span id="partyNextHint" class="hidden font-mono text-xs muted-text">Waiting for Host or all physicians to lock in...</span>
+        <button id="btnNextAction" class="btn-mono-invert px-5 py-2.5 font-mono text-xs font-bold uppercase tracking-wider ml-auto">
+          [ NEXT CASE -&gt; ]
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== FOOTER ==================== -->
+  <footer class="mono-border-t mt-auto">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2 font-mono text-[11px] muted-text">
+      <span>CONTRADOSE CLINICAL ENGINE // 42 DRUGS // RTDB MULTIPLAYER MATRIX</span>
+      <span>KEYS: [1-4] SELECT CARD | [ENTER] NEXT CASE</span>
+    </div>
+  </footer>
+
+  <!-- ==================== PASS-AND-PLAY HANDOVER OVERLAY ==================== -->
+  <div id="handoverOverlay" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background-color: var(--bg);">
+    <div class="max-w-md w-full mono-border p-8 text-center space-y-6 font-mono">
+      <div class="text-xs muted-text uppercase tracking-widest">PASS-AND-PLAY ROTATION</div>
+      <div class="space-y-1">
+        <div class="text-xs muted-text">TRANSFER TERMINAL CONTROL TO</div>
+        <div id="handoverPlayerName" class="text-2xl font-bold uppercase tracking-tight">DR. 2</div>
+      </div>
+      <div id="handoverSabotageNotice" class="hidden mono-border p-3 text-xs">
+        [WARNING: COMPLICATION MODIFIER INJECTED INTO THIS CASE]
+      </div>
+      <button id="btnConfirmHandover" class="btn-mono-invert w-full py-3 text-xs font-bold uppercase tracking-wider">
+        [ ASSUME CONTROL -&gt; ]
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== PASS-AND-PLAY ROSTER MODAL ==================== -->
+  <div id="rosterModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background-color: var(--bg);">
+    <div class="max-w-md w-full mono-border p-6 space-y-5 font-mono">
+      <div class="flex items-center justify-between mono-border-b pb-3">
+        <span class="text-xs font-bold uppercase">PASS &amp; PLAY PHYSICIAN ROSTER (2-4)</span>
+        <button id="btnCloseRoster" class="text-xs muted-text hover:text-[var(--fg)]">[X]</button>
+      </div>
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block muted-text text-[10px] mb-1">PLAYER 1 (REQUIRED)</label>
+          <input type="text" id="p1Name" value="DR. ONE" class="mono-input w-full px-3 py-2 text-xs">
+        </div>
+        <div>
+          <label class="block muted-text text-[10px] mb-1">PLAYER 2 (REQUIRED)</label>
+          <input type="text" id="p2Name" value="DR. TWO" class="mono-input w-full px-3 py-2 text-xs">
+        </div>
+        <div>
+          <label class="block muted-text text-[10px] mb-1">PLAYER 3 (OPTIONAL - LEAVE BLANK TO DISABLE)</label>
+          <input type="text" id="p3Name" value="" placeholder="Optional 3rd Player..." class="mono-input w-full px-3 py-2 text-xs">
+        </div>
+        <div>
+          <label class="block muted-text text-[10px] mb-1">PLAYER 4 (OPTIONAL - LEAVE BLANK TO DISABLE)</label>
+          <input type="text" id="p4Name" value="" placeholder="Optional 4th Player..." class="mono-input w-full px-3 py-2 text-xs">
+        </div>
+      </div>
+      <button id="btnSaveRoster" class="btn-mono-invert w-full py-2.5 text-xs font-bold uppercase">
+        [ APPLY ROSTER &amp; RESET MATCH ]
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== FIREBASE RTDB CONFIGURATION MODAL (FOR GITHUB PAGES) ==================== -->
+  <div id="rtdbConfigModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background-color: var(--bg);">
+    <div class="max-w-lg w-full mono-border p-6 space-y-5 font-mono text-xs">
+      <div class="flex items-center justify-between mono-border-b pb-3">
+        <span class="font-bold uppercase">FIREBASE REALTIME DATABASE (RTDB) CONFIG</span>
+        <button id="btnCloseRTDBModal" class="muted-text hover:text-[var(--fg)]">[X]</button>
+      </div>
+
+      <p class="muted-text text-[11px] leading-relaxed">
+        For GitHub Pages hosting across devices, paste your Firebase Realtime Database URL (e.g. <span class="underline">https://your-project-default-rtdb.firebaseio.com</span>) or full Firebase config JSON below. Make sure your RTDB Rules allow read/write on <code class="px-1 mono-border">/parties</code>.
+      </p>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block muted-text text-[10px] uppercase mb-1">FIREBASE DATABASE URL OR CONFIG JSON</label>
+          <textarea id="rtdbConfigInput" rows="4"
+                    placeholder='https://your-project-default-rtdb.firebaseio.com&#10;OR paste {"apiKey":"...","databaseURL":"https://..."}'
+                    class="mono-border w-full p-3 bg-[var(--bg)] text-[var(--fg)] font-mono text-xs outline-none"></textarea>
+        </div>
+        <div id="rtdbModalStatus" class="text-[11px] muted-text"></div>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-2 pt-2">
+        <button id="btnClearRTDBConfig" class="btn-mono px-3 py-2 text-[11px] uppercase">
+          [ RESET TO DEFAULT ]
+        </button>
+        <button id="btnSaveRTDBConfig" class="btn-mono-invert px-5 py-2.5 text-xs font-bold uppercase">
+          [ SAVE &amp; CONNECT RTDB ]
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== CLINICAL DATA & ENGINE SCRIPT ==================== -->
+  <script>
+    /* ==========================================================================
+       1. EXPANSIVE PHARMACOPOEIA DATABASE (42 DISTINCT MEDICATIONS)
+       ========================================================================== */
+    const PHARMACOPOEIA = [
+      // CARDIOVASCULAR: ACEi / ARBs / ARNI
+      {
+        id: "lisinopril", name: "Lisinopril", class: "ACE Inhibitor",
+        mechanism: "Blocks conversion of Angiotensin I to II; reduces afterload & intraglomerular pressure.",
+        indications: ["htn_emergency", "hfref_chronic", "diabetic_nephropathy", "ac_stemi"],
+        contraTags: ["pregnancy", "angioedema_hx", "bilat_ras"],
+        vitalRules: [{ param: "sbp", op: "<", val: 90, msg: "Hypotension (SBP < 90 mmHg) risks hemodynamic collapse." }],
+        labRules: [
+          { param: "k", op: ">", val: 5.2, msg: "Hyperkalemia (K+ > 5.2 mEq/L) exacerbated by aldosterone suppression." },
+          { param: "gfr", op: "<", val: 25, msg: "Severe renal impairment (eGFR < 25) risks acute azotemia." }
+        ]
+      },
+      {
+        id: "losartan", name: "Losartan", class: "Angiotensin Receptor Blocker (ARB)",
+        mechanism: "Selectively blocks AT1 receptors; spares bradykinin breakdown.",
+        indications: ["htn_emergency", "hfref_chronic", "diabetic_nephropathy"],
+        contraTags: ["pregnancy", "bilat_ras"],
+        vitalRules: [{ param: "sbp", op: "<", val: 90, msg: "Hypotension (SBP < 90 mmHg) contraindicates vasodilatory blockade." }],
+        labRules: [
+          { param: "k", op: ">", val: 5.2, msg: "Hyperkalemia (K+ > 5.2 mEq/L) risks fatal arrhythmia." },
+          { param: "gfr", op: "<", val: 25, msg: "Severe renal failure (eGFR < 25)." }
+        ]
+      },
+      // BETA BLOCKERS
+      {
+        id: "metoprolol", name: "Metoprolol Succinate", class: "Cardioselective Beta-1 Blocker",
+        mechanism: "Decreases SA nodal rate, AV conduction velocity, and myocardial contractility.",
+        indications: ["afib_rvr", "hfref_chronic", "ac_stemi", "angina_stable", "ventricular_ectopy"],
+        contraTags: ["av_block_high", "cardiogenic_shock", "asthma_severe"],
+        vitalRules: [
+          { param: "hr", op: "<", val: 55, msg: "Bradycardia (HR < 55 bpm) risks complete heart block or asystole." },
+          { param: "sbp", op: "<", val: 90, msg: "Hypotension (SBP < 90 mmHg) worsens hypoperfusion." }
+        ],
+        labRules: []
+      },
+      {
+        id: "carvedilol", name: "Carvedilol", class: "Non-Selective Beta / Alpha-1 Blocker",
+        mechanism: "Blocks Beta-1, Beta-2, and Alpha-1 adrenergic receptors.",
+        indications: ["hfref_chronic", "htn_emergency", "ac_stemi"],
+        contraTags: ["asthma_severe", "copd_severe", "av_block_high", "hepatic_cirrhosis", "cardiogenic_shock"],
+        vitalRules: [
+          { param: "hr", op: "<", val: 55, msg: "Sinus bradycardia (HR < 55 bpm) contraindicates beta blockade." },
+          { param: "sbp", op: "<", val: 90, msg: "Systemic hypotension (SBP < 90 mmHg)." }
+        ],
+        labRules: [{ param: "ast", op: ">", val: 120, msg: "Severe hepatic transaminitis contraindicates Carvedilol metabolism." }]
+      },
+      {
+        id: "labetalol", name: "Labetalol", class: "Combined Alpha/Beta Blocker",
+        mechanism: "Rapid blood pressure reduction without reflex tachycardia; safe in pregnancy.",
+        indications: ["htn_emergency", "preeclampsia_severe", "aortic_dissection"],
+        contraTags: ["asthma_severe", "av_block_high", "cardiogenic_shock"],
+        vitalRules: [
+          { param: "hr", op: "<", val: 55, msg: "Bradycardia (HR < 55 bpm) contraindicates Labetalol." },
+          { param: "sbp", op: "<", val: 95, msg: "Hypotension (SBP < 95 mmHg)." }
+        ],
+        labRules: []
+      },
+      // CALCIUM CHANNEL BLOCKERS
+      {
+        id: "amlodipine", name: "Amlodipine", class: "Dihydropyridine CCB",
+        mechanism: "Peripheral arterial smooth muscle vasodilation.",
+        indications: ["htn_emergency", "angina_stable", "raynauds_severe"],
+        contraTags: ["aortic_stenosis_severe", "cardiogenic_shock"],
+        vitalRules: [{ param: "sbp", op: "<", val: 90, msg: "Hypotension (SBP < 90 mmHg) exacerbated by systemic vasodilation." }],
+        labRules: []
+      },
+      {
+        id: "diltiazem", name: "Diltiazem", class: "Non-Dihydropyridine CCB",
+        mechanism: "Slows AV nodal conduction and reduces SA node automaticity.",
+        indications: ["afib_rvr", "svt_acute", "angina_stable"],
+        contraTags: ["av_block_high", "hfref_decompensated", "wpw_syndrome"],
+        vitalRules: [
+          { param: "hr", op: "<", val: 55, msg: "Bradycardia (HR < 55 bpm) risks AV arrest." },
+          { param: "sbp", op: "<", val: 90, msg: "Hypotension (SBP < 90 mmHg)." }
+        ],
+        labRules: []
+      },
+      {
+        id: "nicardipine", name: "Nicardipine IV", class: "Dihydropyridine CCB Infusion",
+        mechanism: "Titratable arterial vasodilation sparing cardiac conduction.",
+        indications: ["htn_emergency", "preeclampsia_severe", "subarachnoid_htn"],
+        contraTags: ["aortic_stenosis_severe"],
+        vitalRules: [{ param: "sbp", op: "<", val: 95, msg: "Hypotension (SBP < 95 mmHg)." }],
+        labRules: []
+      },
+      // DIURETICS
+      {
+        id: "furosemide", name: "Furosemide", class: "Loop Diuretic",
+        mechanism: "Inhibits NKCC2 cotransporter in thick ascending limb of Loop of Henle.",
+        indications: ["acute_pulm_edema", "hfref_decompensated", "hyperkalemia_acute", "ascites_overload"],
+        contraTags: ["anuria", "sulfa_allergy_severe", "hypovolemic_shock"],
+        vitalRules: [{ param: "sbp", op: "<", val: 85, msg: "Severe hypotension (SBP < 85 mmHg) worsened by volume depletion." }],
+        labRules: [{ param: "k", op: "<", val: 3.1, msg: "Severe hypokalemia (K+ < 3.1 mEq/L) precipitates fatal arrhythmias." }]
+      },
+      {
+        id: "spironolactone", name: "Spironolactone", class: "Mineralocorticoid Receptor Antagonist",
+        mechanism: "Aldosterone antagonist in cortical collecting tubule; potassium-sparing.",
+        indications: ["hfref_chronic", "ascites_overload", "resistant_htn"],
+        contraTags: ["addisons_disease", "anuria"],
+        vitalRules: [],
+        labRules: [
+          { param: "k", op: ">", val: 5.0, msg: "Hyperkalemia (K+ > 5.0 mEq/L) risks lethal hyperkalemic arrest." },
+          { param: "gfr", op: "<", val: 30, msg: "Severe CKD (eGFR < 30 mL/min) contraindicates K+-sparing diuretics." }
+        ]
+      },
+      {
+        id: "hydrochlorothiazide", name: "Hydrochlorothiazide", class: "Thiazide Diuretic",
+        mechanism: "Inhibits Na/Cl reabsorption in distal convoluted tubule.",
+        indications: ["htn_emergency", "nephrolithiasis_hypercalciuria"],
+        contraTags: ["gout_active", "sulfa_allergy_severe", "pregnancy"],
+        vitalRules: [{ param: "sbp", op: "<", val: 90, msg: "Hypotension (SBP < 90 mmHg)." }],
+        labRules: [
+          { param: "na", op: "<", val: 130, msg: "Hyponatremia (Na+ < 130 mEq/L) severely worsened by thiazides." },
+          { param: "k", op: "<", val: 3.2, msg: "Hypokalemia (K+ < 3.2 mEq/L)." },
+          { param: "gfr", op: "<", val: 30, msg: "Ineffective and unsafe when eGFR < 30 mL/min." }
+        ]
+      },
+      // ANTIARRHYTHMICS & NITRATES & PRESSORS
+      {
+        id: "amiodarone", name: "Amiodarone", class: "Class III Antiarrhythmic",
+        mechanism: "Blocks potassium rectifier currents; prolongs action potential and refractory period.",
+        indications: ["vtach_stable", "afib_rvr", "ventricular_ectopy"],
+        contraTags: ["pulm_fibrosis", "long_qt_syndrome", "av_block_high", "iodine_allergy"],
+        vitalRules: [{ param: "hr", op: "<", val: 50, msg: "Severe bradycardia (HR < 50 bpm)." }],
+        labRules: [{ param: "ast", op: ">", val: 150, msg: "Acute hepatotoxicity (AST > 150 U/L)." }]
+      },
+      {
+        id: "adenosine", name: "Adenosine", class: "Purinergic Agonist Antiarrhythmic",
+        mechanism: "Transiently hyperpolarizes AV node to terminate reentry SVT.",
+        indications: ["svt_acute"],
+        contraTags: ["asthma_severe", "copd_severe", "av_block_high", "wpw_syndrome"],
+        vitalRules: [{ param: "hr", op: "<", val: 60, msg: "Bradycardia contraindicates AV nodal blockade." }],
+        labRules: []
+      },
+      {
+        id: "nitroglycerin", name: "Nitroglycerin", class: "Nitrate Vasodilator",
+        mechanism: "Releases nitric oxide; venodilation decreases cardiac preload.",
+        indications: ["angina_stable", "ac_stemi", "acute_pulm_edema"],
+        contraTags: ["pde5_inhibitor_use", "rv_infarction", "increased_icp", "aortic_stenosis_severe"],
+        vitalRules: [{ param: "sbp", op: "<", val: 95, msg: "Hypotension (SBP < 95 mmHg) leads to profound shock with nitrates." }],
+        labRules: []
+      },
+      {
+        id: "norepinephrine", name: "Norepinephrine", class: "Alpha-1 / Beta-1 Agonist Vasopressor",
+        mechanism: "Potent peripheral vasoconstriction and modest inotropy.",
+        indications: ["septic_shock", "cardiogenic_shock", "hypovolemic_shock_refractory"],
+        contraTags: ["mesenteric_ischemia_acute", "vtach_stable"],
+        vitalRules: [{ param: "sbp", op: ">", val: 140, msg: "Hypertension (SBP > 140 mmHg) risks hemorrhagic stroke with pressors." }],
+        labRules: []
+      },
+      // ANTICOAGULANTS & ANTIPLATELETS
+      {
+        id: "heparin", name: "Unfractionated Heparin", class: "Parenteral Anticoagulant",
+        mechanism: "Potentiates Antithrombin III to inactivate Factor Xa and Thrombin (IIa).",
+        indications: ["pe_acute", "dvt_acute", "ac_stemi", "ischemic_limb"],
+        contraTags: ["active_gi_bleed", "ich_history", "hit_history", "recent_neurosurgery"],
+        vitalRules: [],
+        labRules: [
+          { param: "plt", op: "<", val: 55, msg: "Severe thrombocytopenia (Platelets < 55k/µL) risks fatal hemorrhage." },
+          { param: "inr", op: ">", val: 2.5, msg: "Pre-existing coagulopathy (INR > 2.5)." }
+        ]
+      },
+      {
+        id: "apixaban", name: "Apixaban", class: "Direct Factor Xa Inhibitor (DOAC)",
+        mechanism: "Directly and reversibly inhibits free and clot-bound Factor Xa.",
+        indications: ["pe_acute", "dvt_acute", "afib_rvr"],
+        contraTags: ["active_gi_bleed", "ich_history", "mechanical_heart_valve", "pregnancy", "hepatic_cirrhosis"],
+        vitalRules: [],
+        labRules: [
+          { param: "plt", op: "<", val: 55, msg: "Thrombocytopenia (Platelets < 55k/µL) contraindicates anticoagulation." },
+          { param: "gfr", op: "<", val: 15, msg: "End-stage renal failure (eGFR < 15 mL/min)." },
+          { param: "inr", op: ">", val: 2.2, msg: "Baseline coagulopathy (INR > 2.2)." }
+        ]
+      },
+      {
+        id: "warfarin", name: "Warfarin", class: "Vitamin K Epoxide Reductase Inhibitor",
+        mechanism: "Depletes functional clotting factors II, VII, IX, X, and Proteins C/S.",
+        indications: ["mechanical_valve_anticoag", "dvt_acute"],
+        contraTags: ["pregnancy", "active_gi_bleed", "ich_history", "hepatic_cirrhosis"],
+        vitalRules: [],
+        labRules: [
+          { param: "inr", op: ">", val: 3.2, msg: "Supratherapeutic INR (> 3.2) risks spontaneous hemorrhage." },
+          { param: "plt", op: "<", val: 55, msg: "Severe thrombocytopenia (Platelets < 55k/µL)." }
+        ]
+      },
+      {
+        id: "aspirin", name: "Aspirin (High Dose)", class: "Irreversible COX-1 Antiplatelet",
+        mechanism: "Inhibits Thromboxane A2 synthesis in platelets.",
+        indications: ["ac_stemi", "ischemic_stroke_acute", "angina_stable", "pericarditis_acute"],
+        contraTags: ["active_gi_bleed", "ich_history", "aspirin_exacerbated_resp"],
+        vitalRules: [],
+        labRules: [{ param: "plt", op: "<", val: 50, msg: "Severe thrombocytopenia (Platelets < 50k/µL)." }]
+      },
+      {
+        id: "clopidogrel", name: "Clopidogrel", class: "P2Y12 ADP Receptor Antagonist",
+        mechanism: "Irreversibly blocks platelet GPIIb/IIIa activation.",
+        indications: ["ac_stemi", "ischemic_stroke_acute", "angina_stable"],
+        contraTags: ["active_gi_bleed", "ich_history", "recent_neurosurgery"],
+        vitalRules: [],
+        labRules: [{ param: "plt", op: "<", val: 50, msg: "Severe thrombocytopenia (Platelets < 50k/µL)." }]
+      },
+      // ANALGESICS & ANTI-INFLAMMATORIES
+      {
+        id: "ibuprofen", name: "Ibuprofen", class: "Non-Selective NSAID",
+        mechanism: "Reversibly inhibits COX-1 and COX-2 prostaglandin synthesis.",
+        indications: ["pericarditis_acute", "gout_flare_acute", "msk_trauma_pain", "inflammatory_arthritis"],
+        contraTags: ["active_gi_bleed", "peptic_ulcer_hx", "hfref_chronic", "hfref_decompensated", "pregnancy"],
+        vitalRules: [],
+        labRules: [
+          { param: "gfr", op: "<", val: 35, msg: "Renal insufficiency (eGFR < 35 mL/min): NSAIDs constrict afferent arterioles causing acute renal necrosis." },
+          { param: "plt", op: "<", val: 60, msg: "Thrombocytopenia (Platelets < 60k/µL)." }
+        ]
+      },
+      {
+        id: "ketorolac", name: "Ketorolac IV", class: "Potent Parenteral NSAID",
+        mechanism: "Potent COX inhibition providing opioid-level analgesia.",
+        indications: ["renal_colic_acute", "msk_trauma_pain", "migraine_severe"],
+        contraTags: ["active_gi_bleed", "peptic_ulcer_hx", "ich_history", "pregnancy", "hfref_chronic"],
+        vitalRules: [],
+        labRules: [
+          { param: "gfr", op: "<", val: 40, msg: "Impaired renal function (eGFR < 40 mL/min) strictly contraindicates Ketorolac." },
+          { param: "plt", op: "<", val: 70, msg: "Thrombocytopenia (Platelets < 70k/µL)." }
+        ]
+      },
+      {
+        id: "colchicine", name: "Colchicine", class: "Microtubule Polymerization Inhibitor",
+        mechanism: "Inhibits neutrophil chemotaxis and inflammasome activation.",
+        indications: ["gout_flare_acute", "pericarditis_acute"],
+        contraTags: ["hepatic_cirrhosis"],
+        vitalRules: [],
+        labRules: [
+          { param: "gfr", op: "<", val: 30, msg: "Severe renal impairment (eGFR < 30) precipitates fatal colchicine neuromyotoxicity." },
+          { param: "ast", op: ">", val: 120, msg: "Combined hepatorenal clearance impairment." }
+        ]
+      },
+      {
+        id: "morphine", name: "Morphine Sulfate", class: "Mu-Opioid Receptor Agonist",
+        mechanism: "Central analgesia and sedative reduction of sympathetic drive.",
+        indications: ["msk_trauma_pain", "renal_colic_acute", "acute_pulm_edema"],
+        contraTags: ["paralytic_ileus", "increased_icp", "myasthenia_gravis"],
+        vitalRules: [
+          { param: "rr", op: "<", val: 11, msg: "Respiratory depression (RR < 11/min) leads to fatal apnea." },
+          { param: "sbp", op: "<", val: 90, msg: "Hypotension (SBP < 90 mmHg) worsened by histamine-mediated vasodilation." }
+        ],
+        labRules: [{ param: "gfr", op: "<", val: 25, msg: "Renal failure (eGFR < 25) causes neurotoxic morphine-6-glucuronide accumulation." }]
+      },
+      {
+        id: "acetaminophen", name: "Acetaminophen", class: "Central Analgesic / Antipyretic",
+        mechanism: "Inhibits central prostaglandin synthesis without peripheral GI or platelet toxicity.",
+        indications: ["msk_trauma_pain", "osteoarthritis_pain", "migraine_severe"],
+        contraTags: ["hepatic_cirrhosis", "acute_alcoholic_hepatitis"],
+        vitalRules: [],
+        labRules: [{ param: "ast", op: ">", val: 130, msg: "Acute hepatic injury (AST > 130 U/L) contraindicates Acetaminophen due to NAPQI depletion of glutathione." }]
+      },
+      // PULMONOLOGY
+      {
+        id: "albuterol", name: "Albuterol Nebulized", class: "Short-Acting Beta-2 Agonist (SABA)",
+        mechanism: "Relaxes bronchial smooth muscle via cAMP elevation; shifts K+ intracellularly.",
+        indications: ["asthma_exacerbation", "copd_exacerbation", "hyperkalemia_acute"],
+        contraTags: ["vtach_stable"],
+        vitalRules: [{ param: "hr", op: ">", val: 145, msg: "Extreme tachyarrhythmia (HR > 145 bpm) risks ventricular fibrillation." }],
+        labRules: [{ param: "k", op: "<", val: 3.0, msg: "Severe hypokalemia (K+ < 3.0 mEq/L) worsened by intracellular potassium shift." }]
+      },
+      {
+        id: "ipratropium", name: "Ipratropium Bromide", class: "Inhaled Muscarinic Antagonist (SAMA)",
+        mechanism: "Blocks vagally mediated bronchoconstriction without cardiac beta stimulation.",
+        indications: ["copd_exacerbation", "asthma_exacerbation"],
+        contraTags: ["narrow_angle_glaucoma", "urinary_retention_bph"],
+        vitalRules: [],
+        labRules: []
+      },
+      {
+        id: "prednisone", name: "Prednisone", class: "Systemic Glucocorticoid",
+        mechanism: "Suppresses phospholipase A2 and inflammatory cytokine transcription.",
+        indications: ["asthma_exacerbation", "copd_exacerbation", "gout_flare_acute", "inflammatory_arthritis", "autoimmune_vasculitis"],
+        contraTags: ["systemic_fungal_infection", "active_gi_bleed", "psychosis_acute", "dka_acute"],
+        vitalRules: [],
+        labRules: []
+      },
+      // ENDOCRINOLOGY
+      {
+        id: "metformin", name: "Metformin", class: "Biguanide Antihyperglycemic",
+        mechanism: "AMPK activation; inhibits hepatic gluconeogenesis and increases peripheral insulin sensitivity.",
+        indications: ["t2dm_uncontrolled"],
+        contraTags: ["septic_shock", "hepatic_cirrhosis", "hfref_decompensated", "dka_acute"],
+        vitalRules: [{ param: "sbp", op: "<", val: 90, msg: "Tissue hypoperfusion precipitates Metformin-Associated Lactic Acidosis (MALA)." }],
+        labRules: [
+          { param: "gfr", op: "<", val: 30, msg: "Severe CKD (eGFR < 30 mL/min) strictly contraindicates Metformin due to lactic acidosis." },
+          { param: "ast", op: ">", val: 120, msg: "Hepatic impairment prevents lactate clearance." }
+        ]
+      },
+      {
+        id: "glipizide", name: "Glipizide", class: "Sulfonylurea Secretagogue",
+        mechanism: "Closes ATP-sensitive K+ channels on pancreatic beta cells, stimulating insulin release.",
+        indications: ["t2dm_uncontrolled"],
+        contraTags: ["dka_acute", "sulfa_allergy_severe", "hepatic_cirrhosis"],
+        vitalRules: [],
+        labRules: [{ param: "gfr", op: "<", val: 25, msg: "Severe renal impairment (eGFR < 25) risks refractory neuroglycopenia." }]
+      },
+      {
+        id: "insulin_regular", name: "Regular Insulin IV", class: "Short-Acting Peptide Hormone",
+        mechanism: "Stimulates skeletal muscle glucose and potassium uptake; suppresses ketogenesis.",
+        indications: ["dka_acute", "hyperkalemia_acute", "t2dm_uncontrolled"],
+        contraTags: [],
+        vitalRules: [],
+        labRules: [{ param: "k", op: "<", val: 3.3, msg: "Hypokalemia (K+ < 3.3 mEq/L): Insulin drives K+ into cells, causing lethal arrhythmia before K+ is repleted." }]
+      },
+      // INFECTIOUS DISEASE
+      {
+        id: "ceftriaxone", name: "Ceftriaxone", class: "3rd-Generation Cephalosporin",
+        mechanism: "Bactericidal inhibition of peptidoglycan cell wall cross-linking; dual hepatorenal clearance.",
+        indications: ["cap_pneumonia", "bacterial_meningitis", "pyelonephritis_acute", "septic_shock"],
+        contraTags: ["cephalosporin_anaphylaxis", "biliary_sludge_cholestasis"],
+        vitalRules: [],
+        labRules: []
+      },
+      {
+        id: "vancomycin", name: "Vancomycin IV", class: "Glycopeptide Antibiotic",
+        mechanism: "Binds D-Ala-D-Ala terminus of cell wall precursors against Gram-positive MRSA.",
+        indications: ["mrsa_bacteremia", "bacterial_meningitis", "septic_shock"],
+        contraTags: ["vancomycin_dress_hx"],
+        vitalRules: [],
+        labRules: [{ param: "gfr", op: "<", val: 20, msg: "Acute oliguric renal failure (eGFR < 20) carries high risk of irreversible nephrotoxicity." }]
+      },
+      {
+        id: "piperacillin_tazo", name: "Piperacillin-Tazobactam", class: "Antipseudomonal Penicillin + Beta-Lactamase Inhibitor",
+        mechanism: "Broad-spectrum Gram-negative, Gram-positive, and anaerobic bactericidal activity.",
+        indications: ["septic_shock", "nosocomial_pneumonia", "intraabdominal_sepsis"],
+        contraTags: ["penicillin_anaphylaxis", "cephalosporin_anaphylaxis"],
+        vitalRules: [],
+        labRules: []
+      },
+      {
+        id: "ciprofloxacin", name: "Ciprofloxacin", class: "Fluoroquinolone Antibiotic",
+        mechanism: "Inhibits bacterial DNA gyrase and topoisomerase IV.",
+        indications: ["pyelonephritis_acute", "intraabdominal_sepsis", "nosocomial_pneumonia"],
+        contraTags: ["myasthenia_gravis", "aortic_aneurysm_hx", "long_qt_syndrome", "pregnancy", "achilles_tendinopathy"],
+        vitalRules: [],
+        labRules: []
+      },
+      {
+        id: "azithromycin", name: "Azithromycin", class: "Macrolide Antibiotic",
+        mechanism: "Binds 50S ribosomal subunit inhibiting bacterial protein translocation.",
+        indications: ["cap_pneumonia", "copd_exacerbation"],
+        contraTags: ["long_qt_syndrome", "myasthenia_gravis", "hepatic_cirrhosis"],
+        vitalRules: [{ param: "hr", op: "<", val: 50, msg: "Bradycardia increases pause-dependent Torsades de Pointes risk." }],
+        labRules: [{ param: "k", op: "<", val: 3.3, msg: "Hypokalemia (K+ < 3.3) + QT prolongation precipitates Torsades de Pointes." }]
+      },
+      {
+        id: "nitrofurantoin", name: "Nitrofurantoin", class: "Urinary Antiseptic",
+        mechanism: "Reduced by bacterial flavoproteins into reactive intermediates damaging ribosomal DNA.",
+        indications: ["cystitis_uncomplicated"],
+        contraTags: ["g6pd_deficiency", "pulm_fibrosis"],
+        vitalRules: [],
+        labRules: [{ param: "gfr", op: "<", val: 35, msg: "Renal insufficiency (eGFR < 35 mL/min): Fails to concentrate in urine and causes systemic neurotoxicity." }]
+      },
+      {
+        id: "trimethoprim_sulfa", name: "TMP-SMX (Bactrim)", class: "Folate Synthesis Inhibitor",
+        mechanism: "Sequential blockade of dihydropteroate synthase and dihydrofolate reductase.",
+        indications: ["cystitis_uncomplicated", "pyelonephritis_acute", "mrsa_skin_infection"],
+        contraTags: ["sulfa_allergy_severe", "g6pd_deficiency", "pregnancy"],
+        vitalRules: [],
+        labRules: [
+          { param: "k", op: ">", val: 5.1, msg: "Hyperkalemia (K+ > 5.1 mEq/L): Trimethoprim blocks ENaC channels like Amiloride, causing fatal hyperkalemia." },
+          { param: "gfr", op: "<", val: 25, msg: "Severe CKD (eGFR < 25) precipitates crystalluria and marrow suppression." }
+        ]
+      },
+      // NEUROLOGY / PSYCHIATRY / GI
+      {
+        id: "haloperidol", name: "Haloperidol", class: "Typical Butyrophenone Antipsychotic",
+        mechanism: "Potent central D2 dopamine receptor antagonism.",
+        indications: ["delirium_agitated", "psychosis_acute"],
+        contraTags: ["parkinsons_disease", "lewy_body_dementia", "long_qt_syndrome"],
+        vitalRules: [],
+        labRules: [{ param: "k", op: "<", val: 3.3, msg: "Hypokalemia (K+ < 3.3) potentiates QTc prolongation and Torsades." }]
+      },
+      {
+        id: "lorazepam", name: "Lorazepam IV", class: "Benzodiazepine GABA-A Agonist",
+        mechanism: "Increases frequency of chloride channel opening on GABA-A receptors.",
+        indications: ["status_epilepticus", "delirium_agitated", "alcohol_withdrawal_severe"],
+        contraTags: ["myasthenia_gravis", "narrow_angle_glaucoma", "sleep_apnea_severe"],
+        vitalRules: [{ param: "rr", op: "<", val: 11, msg: "Respiratory depression (RR < 11/min) leads to hypercapnic arrest." }],
+        labRules: []
+      },
+      {
+        id: "sumatriptan", name: "Sumatriptan", class: "5-HT1B/1D Serotonin Agonist",
+        mechanism: "Cranial vasoconstriction and inhibition of trigeminal neuropeptide release.",
+        indications: ["migraine_severe"],
+        contraTags: ["angina_stable", "ac_stemi", "ischemic_stroke_acute", "raynauds_severe"],
+        vitalRules: [{ param: "sbp", op: ">", val: 165, msg: "Uncontrolled hypertension (SBP > 165 mmHg) risks coronary vasospasm or stroke." }],
+        labRules: []
+      },
+      {
+        id: "pantoprazole", name: "Pantoprazole IV", class: "Proton Pump Inhibitor (PPI)",
+        mechanism: "Irreversibly inhibits gastric parietal H+/K+ ATPase pump.",
+        indications: ["active_gi_bleed_tx", "gerd_erosive"],
+        contraTags: ["ppi_interstitial_nephritis_hx"],
+        vitalRules: [],
+        labRules: []
+      }
+    ];
+
+    /* ==========================================================================
+       2. PROCEDURAL CLINICAL INDICATIONS & COMORBIDITIES MATRIX
+       ========================================================================== */
+    const CLINICAL_INDICATIONS = [
+      {
+        id: "htn_emergency", specialty: "Cardiology",
+        title: "Hypertensive Urgency / Emergency with fundoscopic papilledema and severe headache",
+        baseVitals: { sbp: 194, dbp: 116, hr: 84, rr: 18, temp: "37.0", spo2: 97 }
+      },
+      {
+        id: "afib_rvr", specialty: "Cardiology",
+        title: "New-onset Atrial Fibrillation with Rapid Ventricular Response and palpitations",
+        baseVitals: { sbp: 128, dbp: 78, hr: 138, rr: 20, temp: "36.9", spo2: 96 }
+      },
+      {
+        id: "hfref_chronic", specialty: "Cardiology",
+        title: "Systolic Heart Failure (LVEF 28%) requiring guideline-directed neurohormonal remodeling therapy",
+        baseVitals: { sbp: 124, dbp: 76, hr: 82, rr: 18, temp: "36.8", spo2: 95 }
+      },
+      {
+        id: "acute_pulm_edema", specialty: "Cardiology / Critical Care",
+        title: "Acute Cardiogenic Pulmonary Edema with bilateral rales, orthopnea, and jugular venous distension",
+        baseVitals: { sbp: 164, dbp: 98, hr: 108, rr: 28, temp: "37.0", spo2: 88 }
+      },
+      {
+        id: "ac_stemi", specialty: "Cardiology",
+        title: "Acute Anterior ST-Elevation Myocardial Infarction (STEMI) with crushing substernal chest pain",
+        baseVitals: { sbp: 136, dbp: 84, hr: 94, rr: 22, temp: "37.1", spo2: 94 }
+      },
+      {
+        id: "svt_acute", specialty: "Cardiology",
+        title: "Paroxysmal Supraventricular Tachycardia (AVNRT) refractory to vagal maneuvers",
+        baseVitals: { sbp: 116, dbp: 74, hr: 172, rr: 22, temp: "36.9", spo2: 97 }
+      },
+      {
+        id: "pericarditis_acute", specialty: "Cardiology",
+        title: "Acute Idiopathic Pericarditis with positional pleuritic chest pain and diffuse PR depression",
+        baseVitals: { sbp: 126, dbp: 78, hr: 96, rr: 18, temp: "37.8", spo2: 98 }
+      },
+      {
+        id: "pe_acute", specialty: "Pulmonology / Hematology",
+        title: "Acute Submassive Pulmonary Embolism confirmed on CT pulmonary angiogram",
+        baseVitals: { sbp: 118, dbp: 74, hr: 114, rr: 26, temp: "37.3", spo2: 90 }
+      },
+      {
+        id: "dvt_acute", specialty: "Hematology / Vascular",
+        title: "Proximal Femoral Deep Vein Thrombosis with unilateral lower extremity swelling and erythema",
+        baseVitals: { sbp: 130, dbp: 82, hr: 88, rr: 16, temp: "37.1", spo2: 98 }
+      },
+      {
+        id: "asthma_exacerbation", specialty: "Pulmonology",
+        title: "Acute Severe Asthma Exacerbation with diffuse expiratory wheezing and accessory muscle use",
+        baseVitals: { sbp: 134, dbp: 82, hr: 112, rr: 28, temp: "37.1", spo2: 91 }
+      },
+      {
+        id: "copd_exacerbation", specialty: "Pulmonology",
+        title: "Acute Exacerbation of Chronic Obstructive Pulmonary Disease (AECOPD) with purulent sputum",
+        baseVitals: { sbp: 138, dbp: 84, hr: 102, rr: 26, temp: "37.4", spo2: 89 }
+      },
+      {
+        id: "cap_pneumonia", specialty: "Infectious Disease",
+        title: "Community-Acquired Lobar Pneumonia with right lower lobe consolidation and rigor",
+        baseVitals: { sbp: 118, dbp: 72, hr: 104, rr: 24, temp: "39.1", spo2: 92 }
+      },
+      {
+        id: "pyelonephritis_acute", specialty: "Infectious Disease / Nephrology",
+        title: "Acute Complicated Pyelonephritis with costovertebral angle tenderness and bacteriuria",
+        baseVitals: { sbp: 122, dbp: 74, hr: 106, rr: 20, temp: "39.2", spo2: 97 }
+      },
+      {
+        id: "septic_shock", specialty: "Critical Care / Infectious Disease",
+        title: "Septic Shock secondary to ascending cholangitis requiring empiric antimicrobial or hemodynamic rescue",
+        baseVitals: { sbp: 82, dbp: 48, hr: 124, rr: 26, temp: "39.4", spo2: 93 }
+      },
+      {
+        id: "cystitis_uncomplicated", specialty: "Infectious Disease",
+        title: "Acute Symptomatic Bacterial Cystitis with dysuria, frequency, and suprapubic tenderness",
+        baseVitals: { sbp: 124, dbp: 76, hr: 78, rr: 14, temp: "37.2", spo2: 99 }
+      },
+      {
+        id: "hyperkalemia_acute", specialty: "Nephrology",
+        title: "Acute Symptomatic Hyperkalemia with peaked T-waves on 12-lead ECG",
+        baseVitals: { sbp: 138, dbp: 84, hr: 68, rr: 18, temp: "36.8", spo2: 97 },
+        forceLabs: { k: 6.4 }
+      },
+      {
+        id: "t2dm_uncontrolled", specialty: "Endocrinology",
+        title: "Uncontrolled Type 2 Diabetes Mellitus (HbA1c 9.8%, Fasting Glucose 265 mg/dL) requiring initiation of therapy",
+        baseVitals: { sbp: 134, dbp: 82, hr: 80, rr: 16, temp: "36.9", spo2: 98 }
+      },
+      {
+        id: "dka_acute", specialty: "Endocrinology / Critical Care",
+        title: "Diabetic Ketoacidosis (pH 7.18, Anion Gap 24, Blood Glucose 480 mg/dL) after fluid bolus",
+        baseVitals: { sbp: 112, dbp: 68, hr: 116, rr: 28, temp: "36.7", spo2: 98 }
+      },
+      {
+        id: "gout_flare_acute", specialty: "Rheumatology",
+        title: "Acute Monarticular Podagra (Gout Flare) with negatively birefringent monosodium urate crystals",
+        baseVitals: { sbp: 138, dbp: 86, hr: 88, rr: 16, temp: "37.5", spo2: 98 }
+      },
+      {
+        id: "msk_trauma_pain", specialty: "Emergency Medicine",
+        title: "Severe Acute Closed Tibial Shaft Fracture Pain awaiting orthopedic reduction",
+        baseVitals: { sbp: 144, dbp: 88, hr: 98, rr: 18, temp: "36.9", spo2: 99 }
+      },
+      {
+        id: "migraine_severe", specialty: "Neurology",
+        title: "Acute Refractory Migraine with photophobia, phonophobia, and unilateral throbbing pain",
+        baseVitals: { sbp: 132, dbp: 82, hr: 84, rr: 16, temp: "36.8", spo2: 99 }
+      },
+      {
+        id: "delirium_agitated", specialty: "Neurology / Psychiatry",
+        title: "Acute Hyperactive Hospital Delirium with severe agitation and line-pulling behavior",
+        baseVitals: { sbp: 142, dbp: 88, hr: 102, rr: 20, temp: "37.1", spo2: 97 }
+      },
+      {
+        id: "status_epilepticus", specialty: "Neurology",
+        title: "Generalized Convulsive Status Epilepticus lasting > 5 minutes",
+        baseVitals: { sbp: 158, dbp: 94, hr: 126, rr: 24, temp: "37.9", spo2: 91 }
+      },
+      {
+        id: "active_gi_bleed_tx", specialty: "Gastroenterology",
+        title: "Acute Upper Gastrointestinal Bleeding with hematemesis and melena from duodenal ulcer",
+        baseVitals: { sbp: 104, dbp: 64, hr: 112, rr: 20, temp: "36.8", spo2: 96 }
+      }
+    ];
+
+    const COMORBIDITY_POOL = [
+      { tag: "pregnancy", label: "PREGNANCY (2ND TRIMESTER)", restrictSex: "FEMALE" },
+      { tag: "angioedema_hx", label: "HX OF HEREDITARY / DRUG ANGIOEDEMA" },
+      { tag: "bilat_ras", label: "BILATERAL RENAL ARTERY STENOSIS" },
+      { tag: "asthma_severe", label: "SEVERE PERSISTENT BRONCHIAL ASTHMA" },
+      { tag: "copd_severe", label: "GOLD STAGE IV COPD" },
+      { tag: "av_block_high", label: "MOBITZ TYPE II 2ND-DEGREE AV BLOCK", vitalMod: { hr: 48 } },
+      { tag: "aortic_stenosis_severe", label: "CRITICAL AORTIC VALVE STENOSIS (AVA 0.7 cm²)" },
+      { tag: "active_gi_bleed", label: "ACTIVE PEPTIC ULCER HEMORRHAGE" },
+      { tag: "ich_history", label: "RECENT INTRACRANIAL HEMORRHAGE (3 WKS AGO)" },
+      { tag: "hit_history", label: "HEPARIN-INDUCED THROMBOCYTOPENIA (HIT) ANTIBODIES" },
+      { tag: "hepatic_cirrhosis", label: "DECOMPENSATED HEPATIC CIRRHOSIS (CHILD-PUGH C)", labMod: { ast: 168, alt: 142, inr: 2.1 } },
+      { tag: "long_qt_syndrome", label: "CONGENITAL LONG QT SYNDROME (QTc 535 ms)" },
+      { tag: "parkinsons_disease", label: "IDIOPATHIC PARKINSON'S DISEASE" },
+      { tag: "myasthenia_gravis", label: "MYASTHENIA GRAVIS" },
+      { tag: "sulfa_allergy_severe", label: "SULFONAMIDE ANAPHYLAXIS / STEVENS-JOHNSON HX" },
+      { tag: "penicillin_anaphylaxis", label: "IGE-MEDIATED PENICILLIN / BETA-LACTAM ANAPHYLAXIS" },
+      { tag: "cephalosporin_anaphylaxis", label: "SEVERE CEPHALOSPORIN ANAPHYLAXIS" },
+      { tag: "pde5_inhibitor_use", label: "SILDENAFIL (PDE-5 INHIBITOR) INGESTED 4 HRS AGO" },
+      { tag: "g6pd_deficiency", label: "G6PD ENZYME DEFICIENCY" },
+      { tag: "pulm_fibrosis", label: "IDIOPATHIC PULMONARY FIBROSIS (DLCO 38%)" },
+      { tag: "ckd_stage4", label: "STAGE 4 CHRONIC KIDNEY DISEASE", labMod: { gfr: 21 } },
+      { tag: "hyperkalemia_baseline", label: "BASELINE RENAL TUBULAR HYPERKALEMIA", labMod: { k: 5.6 } },
+      { tag: "hypokalemia_baseline", label: "SEVERE HYPOKALEMIA ON LOOP DIURETICS", labMod: { k: 2.9 } },
+      { tag: "thrombocytopenia_severe", label: "IMMUNE THROMBOCYTOPENIC PURPURA (ITP)", labMod: { plt: 38 } },
+      { tag: "hypotension_baseline", label: "AUTONOMIC NEUROPATHIC HYPOTENSION", vitalMod: { sbp: 84, dbp: 52 } },
+      { tag: "resp_depression_baseline", label: "CENTRAL HYPOVENTILATION SYNDROME", vitalMod: { rr: 9 } },
+      { tag: "hyponatremia_baseline", label: "CHRONIC SIADH HYPONATREMIA", labMod: { na: 125 } }
+    ];
+
+    const SABOTAGE_EVENTS = [
+      {
+        name: "ACUTE RENAL SPIKE",
+        desc: "Contrast-induced nephropathy surge: eGFR drops to 18 mL/min.",
+        apply: (pt) => {
+          pt.labs.gfr = 18;
+          pt.comorbidities.push({ tag: "ckd_stage4", label: "[SABOTAGE] ACUTE KIDNEY INJURY (eGFR 18)" });
+        }
+      },
+      {
+        name: "BRADYCARDIC SHIFT",
+        desc: "High vagal tone + conduction block: HR drops to 46 bpm.",
+        apply: (pt) => {
+          pt.vitals.hr = 46;
+          pt.comorbidities.push({ tag: "av_block_high", label: "[SABOTAGE] SINUS BRADYCARDIA (HR 46 BPM)" });
+        }
+      },
+      {
+        name: "HEPATIC LOAD SURGE",
+        desc: "Acute ischemic hepatitis: AST/ALT spike to 210/185 U/L & Cirrhosis flag.",
+        apply: (pt) => {
+          pt.labs.ast = 210;
+          pt.labs.alt = 185;
+          pt.comorbidities.push({ tag: "hepatic_cirrhosis", label: "[SABOTAGE] ACUTE ISCHEMIC HEPATITIS" });
+        }
+      },
+      {
+        name: "HYPERKALEMIC SHIFT",
+        desc: "Extracellular potassium shift: Serum K+ rises to 5.8 mEq/L.",
+        apply: (pt) => {
+          pt.labs.k = 5.8;
+          pt.comorbidities.push({ tag: "hyperkalemia_baseline", label: "[SABOTAGE] ACUTE HYPERKALEMIA (K+ 5.8)" });
+        }
+      },
+      {
+        name: "OCCULT GI HEMORRHAGE",
+        desc: "Sudden melena and platelet drop: Platelets 44k/µL + Active GI Bleed.",
+        apply: (pt) => {
+          pt.labs.plt = 44;
+          pt.comorbidities.push({ tag: "active_gi_bleed", label: "[SABOTAGE] ACTIVE UPPER GI BLEED & PLT 44K" });
+        }
+      }
+    ];
+
+    /* ==========================================================================
+       3. APPLICATION STATE & CORE LOGIC
+       ========================================================================== */
+    const state = {
+      theme: "light",
+      mode: "solo",       // 'solo' | 'multi' | 'party'
+      inputMode: "cards", // 'cards' | 'type'
+      caseResolved: false,
+
+      solo: {
+        caseNum: 1,
+        streak: 0,
+        total: 0,
+        correct: 0,
+        score: 0
+      },
+
+      multi: {
+        players: [
+          { name: "DR. ONE", score: 0 },
+          { name: "DR. TWO", score: 0 }
+        ],
+        activeIdx: 0,
+        caseNum: 1,
+        sabotageUsedThisTurn: false,
+        activeSabotage: null
+      },
+
+      party: {
+        view: "entry", // 'entry' | 'lobby' | 'game' | 'summary'
+        roomCode: null,
+        playerId: "p_" + Math.random().toString(36).substring(2, 10),
+        callsign: "DR. VANCE",
+        isHost: false,
+        totalCases: 10,
+        sabotageEnabled: true,
+        sabotageUsedByMe: false,
+        ActiveRoundHydrated: -1,
+        roomData: null,
+        pollTimer: null,
+        eventSource: null,
+        customDbUrl: ""
+      },
+
+      currentPatient: null,
+      currentDeck: []
+    };
+
+    /* ==========================================================================
+       3B. FIREBASE REALTIME DATABASE (RTDB) ADAPTER + MULTI-TAB FALLBACK
+       Works seamlessly on GitHub Pages with any Firebase RTDB URL or Config JSON,
+       plus instant BroadcastChannel + Storage sync if testing locally without keys.
+       ========================================================================== */
+    let localBroadcast = null;
+    try {
+      localBroadcast = new BroadcastChannel("contradose_party_channel");
+    } catch (e) {}
+
+    function resolveRTDBBaseUrl() {
+      const raw = (state.party.customDbUrl || "").trim();
+      if (raw) {
+        if (raw.startsWith("http")) {
+          return raw.replace(/\/+$/, "");
+        }
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed.databaseURL) return parsed.databaseURL.replace(/\/+$/, "");
+          if (parsed.projectId) return `https://${parsed.projectId}-default-rtdb.firebaseio.com`;
+        } catch (e) {}
+      }
+      if (typeof __firebase_config !== "undefined" && __firebase_config) {
+        try {
+          const envCfg = typeof __firebase_config === "string" ? JSON.parse(__firebase_config) : __firebase_config;
+          if (envCfg.databaseURL) return envCfg.databaseURL.replace(/\/+$/, "");
+          if (envCfg.projectId) return `https://${envCfg.projectId}-default-rtdb.firebaseio.com`;
+        } catch (e) {}
+      }
+      return "";
+    }
+
+    function readLocalRoomStore(roomCode) {
+      window.__localPartyStore = window.__localPartyStore || {};
+      if (window.__localPartyStore[roomCode]) return window.__localPartyStore[roomCode];
+      try {
+        const raw = localStorage.getItem("contradose_party_" + roomCode);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          window.__localPartyStore[roomCode] = parsed;
+          return parsed;
+        }
+      } catch (e) {}
+      return null;
+    }
+
+    function writeLocalRoomStore(roomCode, data) {
+      window.__localPartyStore = window.__localPartyStore || {};
+      const clone = JSON.parse(JSON.stringify(data));
+      window.__localPartyStore[roomCode] = clone;
+      try {
+        localStorage.setItem("contradose_party_" + roomCode, JSON.stringify(clone));
+      } catch (e) {}
+      if (localBroadcast) {
+        try {
+          localBroadcast.postMessage({ roomCode, data: clone });
+        } catch (e) {}
+      }
+    }
+
+    const RTDB = {
+      usingCloud: false,
+
+      async getRoom(roomCode) {
+        const baseUrl = resolveRTDBBaseUrl();
+        if (baseUrl) {
+          try {
+            const res = await fetch(`${baseUrl}/parties/${roomCode}.json`, { cache: "no-store" });
+            if (res.ok) {
+              const cloudData = await res.json();
+              this.usingCloud = true;
+              updateRTDBStatusBadge(true, baseUrl);
+              if (cloudData) {
+                writeLocalRoomStore(roomCode, cloudData);
+                return cloudData;
+              }
+            }
+          } catch (err) {
+            console.warn("RTDB fetch fallback:", err);
+          }
+        }
+        this.usingCloud = false;
+        updateRTDBStatusBadge(false);
+        return readLocalRoomStore(roomCode);
+      },
+
+      async setRoom(roomCode, data) {
+        writeLocalRoomStore(roomCode, data);
+        const baseUrl = resolveRTDBBaseUrl();
+        if (baseUrl) {
+          try {
+            const res = await fetch(`${baseUrl}/parties/${roomCode}.json`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(data)
+            });
+            if (res.ok) {
+              this.usingCloud = true;
+              updateRTDBStatusBadge(true, baseUrl);
+              return true;
+            }
+          } catch (err) {
+            console.warn("RTDB write fallback:", err);
+          }
+        }
+        this.usingCloud = false;
+        updateRTDBStatusBadge(false);
+        return true;
+      },
+
+      async patchPath(roomCode, subPath, payload) {
+        const existingRoom = readLocalRoomStore(roomCode) || state.party.roomData || {};
+        const parts = subPath.split("/").filter(Boolean);
+        let curr = existingRoom;
+        for (let i = 0; i < parts.length - 1; i++) {
+          if (!curr[parts[i]]) curr[parts[i]] = {};
+          curr = curr[parts[i]];
+        }
+        const lastKey = parts[parts.length - 1];
+        curr[lastKey] = { ...(curr[lastKey] || {}), ...payload };
+        writeLocalRoomStore(roomCode, existingRoom);
+
+        const baseUrl = resolveRTDBBaseUrl();
+        if (baseUrl) {
+          try {
+            const res = await fetch(`${baseUrl}/parties/${roomCode}/${subPath}.json`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+              this.usingCloud = true;
+              return true;
+            }
+          } catch (err) {
+            console.warn("RTDB patch fallback:", err);
+          }
+        }
+        return true;
+      },
+
+      subscribe(roomCode, onUpdate) {
+        this.unsubscribe();
+        const baseUrl = resolveRTDBBaseUrl();
+
+        if (baseUrl && typeof EventSource !== "undefined") {
+          try {
+            const es = new EventSource(`${baseUrl}/parties/${roomCode}.json`);
+            es.addEventListener("put", async () => {
+              const latest = await this.getRoom(roomCode);
+              if (latest) onUpdate(latest);
+            });
+            es.addEventListener("patch", async () => {
+              const latest = await this.getRoom(roomCode);
+              if (latest) onUpdate(latest);
+            });
+            state.party.eventSource = es;
+          } catch (e) {}
+        }
+
+        state.party.pollTimer = setInterval(async () => {
+          const latest = await this.getRoom(roomCode);
+          if (latest) onUpdate(latest);
+        }, 1000);
+
+        if (localBroadcast) {
+          localBroadcast.onmessage = (ev) => {
+            if (ev.data && ev.data.roomCode === roomCode) {
+              window.__localPartyStore = window.__localPartyStore || {};
+              window.__localPartyStore[roomCode] = ev.data.data;
+              onUpdate(ev.data.data);
+            }
+          };
+        }
+
+        window.addEventListener("storage", (ev) => {
+          if (ev.key === "contradose_party_" + roomCode && ev.newValue) {
+            try {
+              const parsed = JSON.parse(ev.newValue);
+              onUpdate(parsed);
+            } catch (e) {}
+          }
+        });
+      },
+
+      unsubscribe() {
+        if (state.party.pollTimer) {
+          clearInterval(state.party.pollTimer);
+          state.party.pollTimer = null;
+        }
+        if (state.party.eventSource) {
+          state.party.eventSource.close();
+          state.party.eventSource = null;
+        }
+      }
+    };
+
+    function updateRTDBStatusBadge(isCloudOnline, urlStr = "") {
+      const badge = document.getElementById("rtdbConnBadge");
+      const label = document.getElementById("rtdbEndpointLabel");
+      const lobbyBadge = document.getElementById("lobbySyncModeBadge");
+      if (isCloudOnline) {
+        if (badge) {
+          badge.textContent = "RTDB CLOUD SYNC";
+          badge.className = "px-2 py-0.5 btn-mono-invert text-[10px] uppercase font-bold";
+        }
+        if (lobbyBadge) {
+          lobbyBadge.textContent = "RTDB CLOUD SYNC";
+          lobbyBadge.className = "px-2 py-0.5 btn-mono-invert text-[10px] uppercase font-bold";
+        }
+        if (label) {
+          const shortHost = urlStr.replace(/^https?:\/\//, "").split("/")[0];
+          label.textContent = `RTDB ENDPOINT: ${shortHost}`;
+        }
+      } else {
+        const hasUrl = Boolean(resolveRTDBBaseUrl());
+        if (badge) {
+          badge.textContent = hasUrl ? "RTDB STANDBY" : "LOCAL MULTI-TAB SYNC";
+          badge.className = "px-2 py-0.5 mono-border text-[10px] uppercase";
+        }
+        if (lobbyBadge) {
+          lobbyBadge.textContent = hasUrl ? "RTDB CLOUD SYNC" : "LOCAL MULTI-TAB SYNC";
+          lobbyBadge.className = "px-2 py-0.5 mono-border text-[10px] uppercase";
+        }
+        if (label) {
+          label.textContent = hasUrl
+            ? "RTDB URL SET (USING MULTI-TAB FALLBACK IF OFFLINE)"
+            : "MULTI-TAB SYNC ACTIVE // CLICK [CONFIGURE RTDB URL / KEYS] FOR CROSS-DEVICE PLAY";
+        }
+      }
+    }
+
+    /* ==========================================================================
+       4. CONTRAINDICATION RULE ENGINE
+       ========================================================================== */
+    function evaluateDrugOnPatient(drug, patient) {
+      const violations = [];
+
+      const ptTags = (patient.comorbidities || []).map(c => c.tag);
+      drug.contraTags.forEach(tag => {
+        if (ptTags.includes(tag)) {
+          const matchedComorb = (patient.comorbidities || []).find(c => c.tag === tag);
+          violations.push(`Contraindicated by [${matchedComorb ? matchedComorb.label : tag.toUpperCase()}].`);
+        }
+      });
+
+      drug.vitalRules.forEach(rule => {
+        const actualVal = patient.vitals[rule.param];
+        if (rule.op === "<" && actualVal < rule.val) violations.push(rule.msg);
+        if (rule.op === ">" && actualVal > rule.val) violations.push(rule.msg);
+      });
+
+      drug.labRules.forEach(rule => {
+        const actualVal = patient.labs[rule.param];
+        if (rule.op === "<" && actualVal < rule.val) violations.push(rule.msg);
+        if (rule.op === ">" && actualVal > rule.val) violations.push(rule.msg);
+      });
+
+      const isIndicated = drug.indications.includes(patient.indication.id);
+      const isContraindicated = violations.length > 0;
+
+      if (isContraindicated) {
+        return {
+          status: "CONTRAINDICATED",
+          passed: false,
+          scoreDelta: -200,
+          indicationMsg: isIndicated
+            ? `${drug.name} is normally indicated for this presentation, but patient-specific risk factors forbid its use.`
+            : `${drug.name} is neither indicated for the primary diagnosis nor safe for this patient.`,
+          safetyMsg: `ABSOLUTE CONTRAINDICATION: ${violations.join(" ")}`
+        };
+      }
+
+      if (isIndicated) {
+        const complexityBonus = (patient.comorbidities || []).length * 25;
+        return {
+          status: "OPTIMAL",
+          passed: true,
+          scoreDelta: 100 + complexityBonus,
+          indicationMsg: `PRIMARY MATCH: ${drug.name} (${drug.class}) directly treats the acute presentation. ${drug.mechanism}`,
+          safetyMsg: `CLEARED: Verified safe across all active comorbidities, hemodynamic vitals, and organ function panels.`
+        };
+      }
+
+      return {
+        status: "SUBOPTIMAL / INEFFECTIVE",
+        passed: false,
+        scoreDelta: -50,
+        indicationMsg: `NO THERAPEUTIC MATCH: ${drug.name} (${drug.class}) does not address the primary clinical presentation.`,
+        safetyMsg: `No direct contraindication violated, but patient remains untreated for primary pathology.`
+      };
+    }
+
+    /* ==========================================================================
+       5. PROCEDURAL PATIENT GENERATOR & 4-CARD DECK BUILDER
+       ========================================================================== */
+    function generatePatientDossier() {
+      const ages = [26, 34, 45, 54, 62, 69, 76, 83];
+      const sexes = ["MALE", "FEMALE"];
+
+      for (let attempt = 0; attempt < 50; attempt++) {
+        const indication = CLINICAL_INDICATIONS[Math.floor(Math.random() * CLINICAL_INDICATIONS.length)];
+        const sex = sexes[Math.floor(Math.random() * sexes.length)];
+        const age = sex === "FEMALE" && Math.random() < 0.25 ? 29 : ages[Math.floor(Math.random() * ages.length)];
+
+        let numComorbs = 2;
+        if (state.mode === "solo") {
+          if (state.solo.streak >= 6) numComorbs = 4;
+          else if (state.solo.streak >= 3) numComorbs = 3;
+        } else {
+          numComorbs = 3;
+        }
+
+        const eligiblePool = COMORBIDITY_POOL.filter(c => !c.restrictSex || c.restrictSex === sex);
+        const shuffledPool = [...eligiblePool].sort(() => 0.5 - Math.random());
+
+        const vitals = { ...indication.baseVitals };
+        const labs = {
+          gfr: 75 + Math.floor(Math.random() * 25),
+          k: Number((3.8 + Math.random() * 0.8).toFixed(1)),
+          na: 137 + Math.floor(Math.random() * 6),
+          plt: 190 + Math.floor(Math.random() * 90),
+          ast: 18 + Math.floor(Math.random() * 14),
+          alt: 16 + Math.floor(Math.random() * 14),
+          inr: 1.0
+        };
+
+        if (indication.forceLabs) Object.assign(labs, indication.forceLabs);
+
+        const chosenComorbs = [];
+        const indicatedDrugs = PHARMACOPOEIA.filter(d => d.indications.includes(indication.id));
+
+        for (const cand of shuffledPool) {
+          if (chosenComorbs.length >= numComorbs) break;
+          const testComorbs = [...chosenComorbs, cand];
+          const testVitals = { ...vitals, ...(cand.vitalMod || {}) };
+          const testLabs = { ...labs, ...(cand.labMod || {}) };
+          const tempPt = { indication, vitals: testVitals, labs: testLabs, comorbidities: testComorbs };
+
+          const safeIndicated = indicatedDrugs.filter(d => evaluateDrugOnPatient(d, tempPt).passed);
+          if (safeIndicated.length >= 1) {
+            chosenComorbs.push(cand);
+            if (cand.vitalMod) Object.assign(vitals, cand.vitalMod);
+            if (cand.labMod) Object.assign(labs, cand.labMod);
+          }
+        }
+
+        const candidatePatient = {
+          id: "PT-" + Math.floor(1000 + Math.random() * 9000),
+          age,
+          sex,
+          indication,
+          vitals,
+          labs,
+          comorbidities: chosenComorbs
+        };
+
+        const validDrugs = indicatedDrugs.filter(d => evaluateDrugOnPatient(d, candidatePatient).passed);
+        if (validDrugs.length >= 1) {
+          return candidatePatient;
+        }
+      }
+
+      const fallbackInd = CLINICAL_INDICATIONS[0];
+      return {
+        id: "PT-1042",
+        age: 64,
+        sex: "MALE",
+        indication: fallbackInd,
+        vitals: { ...fallbackInd.baseVitals },
+        labs: { gfr: 82, k: 4.2, na: 139, plt: 240, ast: 22, alt: 20, inr: 1.0 },
+        comorbidities: [{ tag: "asthma_severe", label: "SEVERE PERSISTENT BRONCHIAL ASTHMA" }]
+      };
+    }
+
+    function generateCardDeck(patient) {
+      const evalResults = PHARMACOPOEIA.map(drug => ({
+        drug,
+        res: evaluateDrugOnPatient(drug, patient)
+      }));
+
+      const optimalList = evalResults.filter(r => r.res.status === "OPTIMAL").map(r => r.drug);
+      const contraIndicatedButIndicated = evalResults
+        .filter(r => r.res.status === "CONTRAINDICATED" && r.drug.indications.includes(patient.indication.id))
+        .map(r => r.drug);
+      const contraGeneral = evalResults
+        .filter(r => r.res.status === "CONTRAINDICATED" && !r.drug.indications.includes(patient.indication.id))
+        .map(r => r.drug);
+      const suboptimalList = evalResults.filter(r => r.res.status === "SUBOPTIMAL / INEFFECTIVE").map(r => r.drug);
+
+      const deck = [];
+
+      if (optimalList.length > 0) {
+        deck.push(optimalList[Math.floor(Math.random() * optimalList.length)]);
+      }
+
+      const shuffle = arr => [...arr].sort(() => 0.5 - Math.random());
+      for (const d of shuffle(contraIndicatedButIndicated)) {
+        if (deck.length < 3 && !deck.some(x => x.id === d.id)) deck.push(d);
+      }
+
+      for (const d of shuffle(contraGeneral)) {
+        if (deck.length < 3 && !deck.some(x => x.id === d.id)) deck.push(d);
+      }
+
+      for (const d of shuffle([...suboptimalList, ...contraGeneral, ...optimalList])) {
+        if (deck.length < 4 && !deck.some(x => x.id === d.id)) deck.push(d);
+      }
+
+      return shuffle(deck);
+    }
+
+    /* ==========================================================================
+       6. UI RENDER FUNCTIONS
+       ========================================================================== */
+    function renderHeaderAndStats() {
+      const isSolo = state.mode === "solo";
+      const isMulti = state.mode === "multi";
+      const isParty = state.mode === "party";
+
+      document.getElementById("btnModeSolo").className = `px-2 sm:px-2.5 py-1 mono-border ${isSolo ? 'btn-mono-active' : 'btn-mono'}`;
+      document.getElementById("btnModeMulti").className = `px-2 sm:px-2.5 py-1 mono-border border-l-0 ${isMulti ? 'btn-mono-active' : 'btn-mono'}`;
+      document.getElementById("btnModeParty").className = `px-2 sm:px-2.5 py-1 mono-border border-l-0 ${isParty ? 'btn-mono-active' : 'btn-mono'}`;
+
+      document.getElementById("btnConfigPlayers").classList.toggle("hidden", !isMulti);
+      document.getElementById("btnConfigRTDB").classList.toggle("hidden", !isParty);
+      document.getElementById("multiScoreStrip").classList.toggle("hidden", !isMulti);
+
+      const inActivePartyGame = isParty && state.party.view === "game";
+      document.getElementById("partyLiveStrip").classList.toggle("hidden", !inActivePartyGame);
+      document.getElementById("partyHubContainer").classList.toggle("hidden", !(isParty && state.party.view !== "game"));
+      document.getElementById("mainGameWorkspace").classList.toggle("hidden", isParty && state.party.view !== "game");
+
+      document.getElementById("uiTopRoomWrap").classList.toggle("hidden", !isParty || !state.party.roomCode);
+      document.getElementById("uiSoloStreakWrap").classList.toggle("hidden", !isSolo);
+      document.getElementById("uiSoloAccWrap").classList.toggle("hidden", !isSolo);
+      document.getElementById("uiMultiTurnWrap").classList.toggle("hidden", !isMulti);
+
+      if (isSolo) {
+        const cNum = String(state.solo.caseNum).padStart(3, "0");
+        const acc = state.solo.total === 0 ? 100 : Math.round((state.solo.correct / state.solo.total) * 100);
+        document.getElementById("uiCaseNum").textContent = cNum;
+        document.getElementById("uiCaseNumMob").textContent = cNum;
+        document.getElementById("uiStreak").textContent = state.solo.streak;
+        document.getElementById("uiStreakMob").textContent = state.solo.streak;
+        document.getElementById("uiAccuracy").textContent = `${acc}%`;
+        document.getElementById("uiScore").textContent = state.solo.score;
+        document.getElementById("uiScoreMob").textContent = state.solo.score;
+      } else if (isMulti) {
+        const cNum = String(state.multi.caseNum).padStart(3, "0");
+        const activePlayer = state.multi.players[state.multi.activeIdx];
+        document.getElementById("uiCaseNum").textContent = cNum;
+        document.getElementById("uiCaseNumMob").textContent = cNum;
+        document.getElementById("uiActivePlayer").textContent = activePlayer.name;
+        document.getElementById("uiScore").textContent = activePlayer.score;
+        document.getElementById("uiScoreMob").textContent = activePlayer.score;
+
+        const listEl = document.getElementById("multiPlayersList");
+        listEl.innerHTML = "";
+        state.multi.players.forEach((p, idx) => {
+          const item = document.createElement("div");
+          const isCurrent = idx === state.multi.activeIdx;
+          item.className = isCurrent ? "font-bold underline" : "muted-text";
+          item.textContent = `${isCurrent ? '▸ ' : ''}${p.name}: ${p.score} PTS`;
+          listEl.appendChild(item);
+        });
+
+        const sabBtn = document.getElementById("btnTriggerSabotage");
+        sabBtn.disabled = state.multi.sabotageUsedThisTurn || state.caseResolved;
+        sabBtn.textContent = state.multi.sabotageUsedThisTurn ? "[COMPLICATION DEPLOYED]" : "[+ INJECT COMPLICATION]";
+      } else if (isParty) {
+        const rm = state.party.roomData;
+        document.getElementById("uiTopRoomCode").textContent = state.party.roomCode || "-----";
+        const roundNum = rm && rm.currentRound ? rm.currentRound : 1;
+        const maxR = rm && rm.totalCases ? rm.totalCases : state.party.totalCases;
+        const cLabel = `${String(roundNum).padStart(2, "0")}/${String(maxR).padStart(2, "0")}`;
+        document.getElementById("uiCaseNum").textContent = cLabel;
+        document.getElementById("uiCaseNumMob").textContent = cLabel;
+
+        const myScore = rm && rm.players && rm.players[state.party.playerId]
+          ? rm.players[state.party.playerId].score || 0
+          : 0;
+        document.getElementById("uiScore").textContent = myScore;
+        document.getElementById("uiScoreMob").textContent = myScore;
+
+        renderPartyLiveStrip();
+      }
+
+      // Input Mode Buttons
+      const isCards = state.inputMode === "cards";
+      document.getElementById("btnInputCards").className = `px-2.5 py-1 mono-border ${isCards ? 'btn-mono-active' : 'btn-mono'}`;
+      document.getElementById("btnInputType").className = `px-2.5 py-1 mono-border border-l-0 ${!isCards ? 'btn-mono-active' : 'btn-mono'}`;
+      document.getElementById("cardsInputGrid").classList.toggle("hidden", !isCards);
+      document.getElementById("typeInputContainer").classList.toggle("hidden", isCards);
+      document.getElementById("inputHintText").textContent = isCards ? "[CLICK CARD OR PRESS 1-4]" : "[TYPE GENERIC NAME & PRESS ENTER]";
+    }
+
+    function renderPatientCase() {
+      const pt = state.currentPatient;
+      if (!pt) return;
+
+      document.getElementById("ptId").textContent = pt.id;
+      document.getElementById("ptDemo").textContent = `${pt.age}Y ${pt.sex}`;
+      document.getElementById("ptSpecialty").textContent = pt.indication.specialty;
+
+      const romans = ["I", "II", "III", "IV"];
+      const compIdx = Math.min(3, Math.max(0, (pt.comorbidities || []).length - 1));
+      document.getElementById("ptComplexity").textContent = `${romans[compIdx]} / IV`;
+
+      document.getElementById("ptPresentation").textContent = pt.indication.title;
+
+      // Vitals
+      document.getElementById("vBP").textContent = `${pt.vitals.sbp}/${pt.vitals.dbp}`;
+      document.getElementById("vHR").textContent = pt.vitals.hr;
+      document.getElementById("vRR").textContent = pt.vitals.rr;
+      document.getElementById("vTemp").textContent = pt.vitals.temp;
+      document.getElementById("vSpO2").textContent = `${pt.vitals.spo2}%`;
+
+      // Labs
+      document.getElementById("lGFR").textContent = `${pt.labs.gfr} mL/min`;
+      document.getElementById("lK").textContent = Number(pt.labs.k).toFixed(1);
+      document.getElementById("lNa").textContent = pt.labs.na;
+      document.getElementById("lPlt").textContent = `${pt.labs.plt}k`;
+      document.getElementById("lLFT").textContent = `${pt.labs.ast}/${pt.labs.alt} U/L`;
+      document.getElementById("lINR").textContent = Number(pt.labs.inr).toFixed(1);
+
+      // Comorbidities
+      const comorbEl = document.getElementById("ptComorbidities");
+      comorbEl.innerHTML = "";
+      (pt.comorbidities || []).forEach(c => {
+        const pill = document.createElement("span");
+        pill.className = "px-2.5 py-1 mono-border font-medium uppercase";
+        pill.textContent = c.label;
+        comorbEl.appendChild(pill);
+      });
+
+      // Sabotage Alert Banner
+      const sabAlert = document.getElementById("sabotageAlert");
+      const partySab = state.mode === "party" && state.party.roomData && state.party.roomData.sabotage;
+      if (state.mode === "multi" && state.multi.activeSabotage) {
+        sabAlert.classList.remove("hidden");
+        document.getElementById("sabotageDesc").textContent = `${state.multi.activeSabotage.name}: ${state.multi.activeSabotage.desc}`;
+      } else if (partySab) {
+        sabAlert.classList.remove("hidden");
+        document.getElementById("sabotageDesc").textContent = `${partySab.name} (BY ${partySab.by}): ${partySab.desc}`;
+      } else {
+        sabAlert.classList.add("hidden");
+      }
+
+      // Render 4-Card Minimalist Grid
+      const gridEl = document.getElementById("cardsInputGrid");
+      gridEl.innerHTML = "";
+      state.currentDeck.forEach((drug, idx) => {
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "btn-mono text-left p-4 flex flex-col justify-between min-h-[132px]";
+        card.disabled = state.caseResolved;
+        card.onclick = () => commitPrescription(drug);
+
+        card.innerHTML = `
+          <div class="w-full">
+            <div class="flex items-center justify-between font-mono text-[10px] muted-text mb-1.5">
+              <span>[${idx + 1}]</span>
+              <span class="uppercase truncate ml-2">${drug.class}</span>
+            </div>
+            <div class="font-bold text-sm tracking-tight">${drug.name}</div>
+          </div>
+          <div class="font-mono text-[11px] muted-text leading-snug mt-3 pt-2 mono-border-t">
+            ${drug.mechanism}
+          </div>
+        `;
+        gridEl.appendChild(card);
+      });
+    }
+
+    /* ==========================================================================
+       7. GAMEPLAY FLOW: COMMITTING PRESCRIPTION & ADVANCING
+       ========================================================================== */
+    async function commitPrescription(drug) {
+      if (state.caseResolved) return;
+      state.caseResolved = true;
+
+      const evalResult = evaluateDrugOnPatient(drug, state.currentPatient);
+
+      if (state.mode === "solo") {
+        state.solo.total++;
+        if (evalResult.passed) {
+          state.solo.correct++;
+          state.solo.streak++;
+          state.solo.score += evalResult.scoreDelta;
+        } else {
+          state.solo.streak = 0;
+          state.solo.score = Math.max(0, state.solo.score + evalResult.scoreDelta);
+        }
+      } else if (state.mode === "multi") {
+        const activePlayer = state.multi.players[state.multi.activeIdx];
+        activePlayer.score = Math.max(0, activePlayer.score + evalResult.scoreDelta);
+      } else if (state.mode === "party" && state.party.roomCode) {
+        const rm = state.party.roomData;
+        const pObj = (rm && rm.players && rm.players[state.party.playerId]) || {
+          name: state.party.callsign,
+          score: 0,
+          correct: 0,
+          total: 0
+        };
+        const updatedScore = Math.max(0, (pObj.score || 0) + evalResult.scoreDelta);
+        const updatedCorrect = (pObj.correct || 0) + (evalResult.passed ? 1 : 0);
+        const updatedTotal = (pObj.total || 0) + 1;
+
+        await RTDB.patchPath(state.party.roomCode, `players/${state.party.playerId}`, {
+          score: updatedScore,
+          correct: updatedCorrect,
+          total: updatedTotal,
+          lastSeen: Date.now()
+        });
+
+        await RTDB.patchPath(state.party.roomCode, `submissions/${state.party.playerId}`, {
+          name: state.party.callsign,
+          drugId: drug.id,
+          drugName: drug.name,
+          status: evalResult.status,
+          passed: evalResult.passed,
+          scoreDelta: evalResult.scoreDelta,
+          timestamp: Date.now()
+        });
+      }
+
+      renderHeaderAndStats();
+      renderPatientCase();
+
+      const outPanel = document.getElementById("outcomePanel");
+      const verdictTag = document.getElementById("outVerdictTag");
+      const drugTitle = document.getElementById("outDrugTitle");
+      const scoreDelta = document.getElementById("outScoreDelta");
+
+      verdictTag.textContent = evalResult.status;
+      if (evalResult.passed) {
+        verdictTag.className = "text-xs font-bold uppercase px-2 py-0.5 btn-mono-invert mr-2";
+      } else {
+        verdictTag.className = "text-xs font-bold uppercase px-2 py-0.5 mono-border mr-2";
+      }
+
+      drugTitle.textContent = `${drug.name} — ${drug.class}`;
+      scoreDelta.textContent = `${evalResult.scoreDelta > 0 ? '+' : ''}${evalResult.scoreDelta} PTS`;
+
+      document.getElementById("outIndicationText").textContent = evalResult.indicationMsg;
+      document.getElementById("outSafetyText").textContent = evalResult.safetyMsg;
+
+      const partySubBox = document.getElementById("partyRoundSubmissionsBox");
+      const nextBtn = document.getElementById("btnNextAction");
+      const partyNextHint = document.getElementById("partyNextHint");
+
+      if (state.mode === "solo") {
+        partySubBox.classList.add("hidden");
+        partyNextHint.classList.add("hidden");
+        nextBtn.classList.remove("hidden");
+        nextBtn.textContent = "[ NEXT CASE -> ]";
+      } else if (state.mode === "multi") {
+        partySubBox.classList.add("hidden");
+        partyNextHint.classList.add("hidden");
+        nextBtn.classList.remove("hidden");
+        const nextIdx = (state.multi.activeIdx + 1) % state.multi.players.length;
+        nextBtn.textContent = `[ PASS TO ${state.multi.players[nextIdx].name} -> ]`;
+      } else if (state.mode === "party") {
+        partySubBox.classList.remove("hidden");
+        const latestRoom = await RTDB.getRoom(state.party.roomCode);
+        if (latestRoom) {
+          state.party.roomData = latestRoom;
+          renderPartySubmissionsBox(latestRoom);
+        }
+      }
+
+      outPanel.classList.remove("hidden");
+      outPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    function startNewRound() {
+      state.caseResolved = false;
+      document.getElementById("outcomePanel").classList.add("hidden");
+      document.getElementById("rxCommandInput").value = "";
+      document.getElementById("rxAutocompleteList").classList.add("hidden");
+
+      state.currentPatient = generatePatientDossier();
+      state.currentDeck = generateCardDeck(state.currentPatient);
+
+      renderHeaderAndStats();
+      renderPatientCase();
+
+      if (state.inputMode === "type") {
+        document.getElementById("rxCommandInput").focus();
+      }
+    }
+
+    async function advanceTurn() {
+      if (state.mode === "solo") {
+        state.solo.caseNum++;
+        startNewRound();
+      } else if (state.mode === "multi") {
+        state.multi.activeIdx = (state.multi.activeIdx + 1) % state.multi.players.length;
+        state.multi.caseNum++;
+        state.multi.sabotageUsedThisTurn = false;
+        state.multi.activeSabotage = null;
+
+        const nextPlayer = state.multi.players[state.multi.activeIdx];
+        document.getElementById("handoverPlayerName").textContent = nextPlayer.name;
+        document.getElementById("handoverSabotageNotice").classList.add("hidden");
+        document.getElementById("handoverOverlay").classList.remove("hidden");
+      } else if (state.mode === "party") {
+        await hostAdvancePartyRound();
+      }
+    }
+
+    function triggerSabotageComplication() {
+      if (state.mode !== "multi" || state.multi.sabotageUsedThisTurn || state.caseResolved) return;
+      state.multi.sabotageUsedThisTurn = true;
+
+      const event = SABOTAGE_EVENTS[Math.floor(Math.random() * SABOTAGE_EVENTS.length)];
+      state.multi.activeSabotage = event;
+      event.apply(state.currentPatient);
+
+      state.currentDeck = generateCardDeck(state.currentPatient);
+      renderHeaderAndStats();
+      renderPatientCase();
+    }
+
+    /* ==========================================================================
+       7B. ONLINE PARTY MODE ENGINE (RTDB LOBBY, SYNCED DOSSIERS, SABOTAGE)
+       ========================================================================== */
+    function serializeRoundPayload(patient, deck) {
+      return {
+        patient,
+        deckIds: deck.map(d => d.id)
+      };
+    }
+
+    function hydrateRoundPayload(payload) {
+      if (!payload || !payload.patient) return;
+      state.currentPatient = JSON.parse(JSON.stringify(payload.patient));
+      const ids = payload.deckIds || [];
+      state.currentDeck = ids
+        .map(id => PHARMACOPOEIA.find(d => d.id === id))
+        .filter(Boolean);
+      if (state.currentDeck.length === 0) {
+        state.currentDeck = generateCardDeck(state.currentPatient);
+      }
+    }
+
+    function showPartyFeedback(msg, isError = false) {
+      const el = document.getElementById("partyEntryFeedback");
+      if (!el) return;
+      el.textContent = msg;
+      el.className = `mono-border p-3 text-xs ${isError ? 'font-bold' : 'muted-text'}`;
+      el.classList.remove("hidden");
+    }
+
+    function generateRoomCode() {
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      let code = "";
+      for (let i = 0; i < 5; i++) {
+        code += chars[Math.floor(Math.random() * chars.length)];
+      }
+      return code;
+    }
+
+    async function createOnlinePartyRoom() {
+      const callsignInput = document.getElementById("partyCreateCallsignInput");
+      const callsign = ((callsignInput && callsignInput.value.trim()) || "DR. HOST").toUpperCase();
+      const totalCases = parseInt(document.getElementById("createCasesSelect").value, 10) || 10;
+      const sabotageEnabled = document.getElementById("createSabotageSelect").value === "enabled";
+
+      state.party.callsign = callsign;
+      state.party.isHost = true;
+      state.party.totalCases = totalCases;
+      state.party.sabotageEnabled = sabotageEnabled;
+      state.party.sabotageUsedByMe = false;
+
+      const roomCode = generateRoomCode();
+      state.party.roomCode = roomCode;
+
+      const initialRoom = {
+        roomCode,
+        hostId: state.party.playerId,
+        status: "lobby",
+        currentRound: 1,
+        totalCases,
+        sabotageEnabled,
+        createdAt: Date.now(),
+        players: {
+          [state.party.playerId]: {
+            id: state.party.playerId,
+            name: callsign,
+            score: 0,
+            correct: 0,
+            total: 0,
+            isHost: true,
+            sabotageUsed: false,
+            lastSeen: Date.now()
+          }
+        },
+        submissions: {},
+        sabotage: null,
+        roundPayload: null
+      };
+
+      await RTDB.setRoom(roomCode, initialRoom);
+      state.party.roomData = initialRoom;
+      switchPartySubView("lobby");
+      RTDB.subscribe(roomCode, handlePartyRoomSnapshot);
+    }
+
+    async function joinOnlinePartyRoom() {
+      const callsignInput = document.getElementById("partyJoinCallsignInput");
+      const callsign = ((callsignInput && callsignInput.value.trim()) || "DR. GUEST").toUpperCase();
+      const codeInput = document.getElementById("partyJoinCodeInput").value.trim().toUpperCase();
+
+      if (!codeInput || codeInput.length < 4) {
+        showPartyFeedback("ERROR: ENTER A VALID 5-CHARACTER ROOM CODE.", true);
+        return;
+      }
+
+      showPartyFeedback(`CONNECTING TO ROOM [${codeInput}]...`, false);
+      const existing = await RTDB.getRoom(codeInput);
+      if (!existing) {
+        showPartyFeedback(`ROOM [${codeInput}] NOT FOUND. VERIFY CODE OR RTDB CONFIG.`, true);
+        return;
+      }
+
+      state.party.callsign = callsign;
+      state.party.roomCode = codeInput;
+      state.party.isHost = existing.hostId === state.party.playerId;
+      state.party.sabotageUsedByMe = false;
+
+      const prevPlayer = existing.players && existing.players[state.party.playerId];
+      await RTDB.patchPath(codeInput, `players/${state.party.playerId}`, {
+        id: state.party.playerId,
+        name: callsign,
+        score: prevPlayer ? prevPlayer.score || 0 : 0,
+        correct: prevPlayer ? prevPlayer.correct || 0 : 0,
+        total: prevPlayer ? prevPlayer.total || 0 : 0,
+        isHost: state.party.isHost,
+        sabotageUsed: false,
+        lastSeen: Date.now()
+      });
+
+      const updated = await RTDB.getRoom(codeInput);
+      state.party.roomData = updated || existing;
+
+      if (state.party.roomData.status === "playing") {
+        state.party.ActiveRoundHydrated = -1;
+        switchPartySubView("game");
+      } else if (state.party.roomData.status === "finished") {
+        switchPartySubView("summary");
+      } else {
+        switchPartySubView("lobby");
+      }
+
+      RTDB.subscribe(codeInput, handlePartyRoomSnapshot);
+    }
+
+    function switchPartySubView(viewName) {
+      state.party.view = viewName;
+      document.getElementById("partyEntryView").classList.toggle("hidden", viewName !== "entry");
+      document.getElementById("partyLobbyView").classList.toggle("hidden", viewName !== "lobby");
+      document.getElementById("partySummaryView").classList.toggle("hidden", viewName !== "summary");
+
+      renderHeaderAndStats();
+      if (viewName === "lobby") renderPartyLobby();
+      if (viewName === "summary") renderPartySummary();
+    }
+
+    function handlePartyRoomSnapshot(room) {
+      if (!room || state.mode !== "party") return;
+      const prevRound = state.party.roomData ? state.party.roomData.currentRound : null;
+      const prevSab = state.party.roomData && state.party.roomData.sabotage ? state.party.roomData.sabotage.timestamp : null;
+
+      state.party.roomData = room;
+      state.party.isHost = room.hostId === state.party.playerId;
+
+      if (room.status === "lobby") {
+        if (state.party.view !== "lobby") switchPartySubView("lobby");
+        else renderPartyLobby();
+      } else if (room.status === "playing") {
+        const isNewView = state.party.view !== "game";
+        const isNewRound = prevRound !== room.currentRound || state.party.ActiveRoundHydrated !== room.currentRound;
+        const newSabTimestamp = room.sabotage ? room.sabotage.timestamp : null;
+        const isNewSabotage = newSabTimestamp && newSabTimestamp !== prevSab;
+
+        if (isNewView) {
+          switchPartySubView("game");
+        }
+
+        if (isNewRound && room.roundPayload) {
+          state.party.ActiveRoundHydrated = room.currentRound;
+          const mySub = room.submissions && room.submissions[state.party.playerId];
+          state.caseResolved = Boolean(mySub);
+          document.getElementById("outcomePanel").classList.toggle("hidden", !state.caseResolved);
+          document.getElementById("rxCommandInput").value = "";
+          document.getElementById("rxAutocompleteList").classList.add("hidden");
+
+          hydrateRoundPayload(room.roundPayload);
+          renderPatientCase();
+        } else if (isNewSabotage && room.roundPayload) {
+          hydrateRoundPayload(room.roundPayload);
+          renderPatientCase();
+        }
+
+        renderHeaderAndStats();
+        if (state.caseResolved) {
+          renderPartySubmissionsBox(room);
+        }
+      } else if (room.status === "finished") {
+        if (state.party.view !== "summary") switchPartySubView("summary");
+        else renderPartySummary();
+      }
+    }
+
+    function renderPartyLobby() {
+      const rm = state.party.roomData;
+      if (!rm) return;
+
+      document.getElementById("lobbyRoomCodeDisplay").textContent = rm.roomCode;
+
+      const roundsSelect = document.getElementById("lobbyRoundsSelect");
+      const sabSelect = document.getElementById("lobbySabotageSelect");
+      roundsSelect.value = String(rm.totalCases || 10);
+      sabSelect.value = rm.sabotageEnabled === false ? "disabled" : "enabled";
+      roundsSelect.disabled = !state.party.isHost;
+      sabSelect.disabled = !state.party.isHost;
+
+      const playersArr = Object.values(rm.players || {});
+      document.getElementById("lobbyPlayerCount").textContent = playersArr.length;
+
+      const grid = document.getElementById("lobbyRosterGrid");
+      grid.innerHTML = "";
+      playersArr.forEach(p => {
+        const card = document.createElement("div");
+        card.className = "mono-border p-3.5 flex items-center justify-between text-xs subtle-fill";
+        const isMe = p.id === state.party.playerId;
+        const roleLabel = p.id === rm.hostId ? "HOST" : "PEER";
+        card.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="font-bold">${p.name}</span>
+            ${isMe ? '<span class="muted-text text-[10px]">(YOU)</span>' : ''}
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="px-2 py-0.5 mono-border text-[10px] uppercase">${roleLabel}</span>
+            <span class="px-2 py-0.5 btn-mono-invert text-[10px] uppercase font-bold">READY</span>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+      const startBtn = document.getElementById("btnStartPartyMatch");
+      const waitMsg = document.getElementById("lobbyWaitStatus");
+      if (state.party.isHost) {
+        startBtn.disabled = false;
+        startBtn.textContent = "[ LAUNCH CLINICAL TRIAL -> ]";
+        waitMsg.textContent = "You are the Host. Configure parameters and launch when ready.";
+      } else {
+        startBtn.disabled = true;
+        startBtn.textContent = "[ WAITING FOR HOST TO LAUNCH... ]";
+        waitMsg.textContent = "Synchronized with Host terminal. Trial will begin automatically.";
+      }
+    }
+
+    async function hostStartPartyMatch() {
+      if (!state.party.isHost || !state.party.roomCode) return;
+      const totalCases = parseInt(document.getElementById("lobbyRoundsSelect").value, 10) || 10;
+      const sabotageEnabled = document.getElementById("lobbySabotageSelect").value === "enabled";
+
+      const firstPt = generatePatientDossier();
+      const firstDeck = generateCardDeck(firstPt);
+
+      const rm = state.party.roomData || {};
+      const resetPlayers = {};
+      Object.values(rm.players || {}).forEach(p => {
+        resetPlayers[p.id] = { ...p, score: 0, correct: 0, total: 0, sabotageUsed: false };
+      });
+
+      state.party.sabotageUsedByMe = false;
+      state.party.ActiveRoundHydrated = -1;
+
+      const updatedRoom = {
+        ...rm,
+        status: "playing",
+        currentRound: 1,
+        totalCases,
+        sabotageEnabled,
+        players: resetPlayers,
+        submissions: {},
+        sabotage: null,
+        roundPayload: serializeRoundPayload(firstPt, firstDeck)
+      };
+
+      await RTDB.setRoom(state.party.roomCode, updatedRoom);
+      handlePartyRoomSnapshot(updatedRoom);
+    }
+
+    function renderPartyLiveStrip() {
+      const rm = state.party.roomData;
+      if (!rm) return;
+
+      document.getElementById("partyStripRoomTag").textContent = `RM: ${rm.roomCode}`;
+      const listEl = document.getElementById("partyLivePlayersList");
+      listEl.innerHTML = "";
+
+      const subs = rm.submissions || {};
+      const playersArr = Object.values(rm.players || {}).sort((a, b) => (b.score || 0) - (a.score || 0));
+      const allLocked = Object.keys(subs).length >= playersArr.length && playersArr.length > 0;
+
+      playersArr.forEach(p => {
+        const sub = subs[p.id];
+        let badge = "THINKING...";
+        if (sub) {
+          if (state.caseResolved || allLocked) {
+            const dStr = `${sub.scoreDelta > 0 ? '+' : ''}${sub.scoreDelta}`;
+            badge = `${sub.status} (${dStr})`;
+          } else {
+            badge = "RX LOCKED";
+          }
+        }
+        const item = document.createElement("div");
+        item.className = "flex items-center gap-1.5";
+        item.innerHTML = `
+          <span class="${p.id === state.party.playerId ? 'font-bold underline' : ''}">${p.name}</span>
+          <span class="font-bold">(${p.score || 0})</span>
+          <span class="px-1.5 py-0.5 mono-border text-[10px] uppercase ${sub ? 'btn-mono-invert' : 'muted-text'}">${badge}</span>
+        `;
+        listEl.appendChild(item);
+      });
+
+      const sabBtn = document.getElementById("btnPartySabotage");
+      if (rm.sabotageEnabled === false) {
+        sabBtn.classList.add("hidden");
+      } else {
+        sabBtn.classList.remove("hidden");
+        const alreadyActive = Boolean(rm.sabotage);
+        sabBtn.disabled = state.party.sabotageUsedByMe || alreadyActive || state.caseResolved;
+        if (state.party.sabotageUsedByMe) {
+          sabBtn.textContent = "[SABOTAGE EXPENDED]";
+        } else if (alreadyActive) {
+          sabBtn.textContent = "[COMPLICATION ACTIVE]";
+        } else {
+          sabBtn.textContent = "[+ INJECT COMPLICATION]";
+        }
+      }
+    }
+
+    function renderPartySubmissionsBox(rm) {
+      if (!rm) return;
+      const playersArr = Object.values(rm.players || {});
+      const subs = rm.submissions || {};
+      const subCount = Object.keys(subs).length;
+      const totalPlayers = playersArr.length;
+      const allSubmitted = subCount >= totalPlayers;
+
+      document.getElementById("partySubCountStatus").textContent =
+        `${subCount} / ${totalPlayers} PHYSICIANS LOCKED IN`;
+
+      const listEl = document.getElementById("partyRoundSubList");
+      listEl.innerHTML = "";
+
+      playersArr.forEach(p => {
+        const s = subs[p.id];
+        const row = document.createElement("div");
+        row.className = "mono-border p-2.5 flex items-center justify-between";
+        if (s) {
+          const deltaStr = `${s.scoreDelta > 0 ? '+' : ''}${s.scoreDelta}`;
+          row.innerHTML = `
+            <div>
+              <span class="font-bold">${p.name}</span>
+              <span class="muted-text block text-[10px]">${allSubmitted || p.id === state.party.playerId ? s.drugName : 'Rx Locked (Hidden)'}</span>
+            </div>
+            <span class="px-2 py-0.5 mono-border text-[10px] font-bold uppercase ${s.passed ? 'btn-mono-invert' : ''}">
+              ${allSubmitted || p.id === state.party.playerId ? `${s.status} (${deltaStr})` : 'RX LOCKED'}
+            </span>
+          `;
+        } else {
+          row.innerHTML = `
+            <div>
+              <span class="font-bold">${p.name}</span>
+              <span class="muted-text block text-[10px]">Evaluating Dossier...</span>
+            </div>
+            <span class="px-2 py-0.5 mono-border text-[10px] muted-text uppercase">THINKING...</span>
+          `;
+        }
+        listEl.appendChild(row);
+      });
+
+      const nextBtn = document.getElementById("btnNextAction");
+      const nextHint = document.getElementById("partyNextHint");
+      const isLastRound = rm.currentRound >= (rm.totalCases || 10);
+
+      if (state.party.isHost || allSubmitted) {
+        nextBtn.classList.remove("hidden");
+        nextHint.classList.toggle("hidden", allSubmitted);
+        nextHint.textContent = allSubmitted
+          ? "All physicians locked in."
+          : "As Host, you can advance now or wait for peers.";
+        nextBtn.textContent = isLastRound
+          ? "[ FINAL BOARD STANDINGS -> ]"
+          : "[ NEXT PARTY CASE -> ]";
+      } else {
+        nextBtn.classList.add("hidden");
+        nextHint.classList.remove("hidden");
+        nextHint.textContent = `Waiting for remaining physicians (${subCount}/${totalPlayers}) or Host...`;
+      }
+    }
+
+    async function triggerOnlinePartySabotage() {
+      const rm = state.party.roomData;
+      if (!rm || state.party.sabotageUsedByMe || rm.sabotage || state.caseResolved) return;
+
+      state.party.sabotageUsedByMe = true;
+      const event = SABOTAGE_EVENTS[Math.floor(Math.random() * SABOTAGE_EVENTS.length)];
+      event.apply(state.currentPatient);
+      state.currentDeck = generateCardDeck(state.currentPatient);
+
+      const updatedPayload = serializeRoundPayload(state.currentPatient, state.currentDeck);
+      const sabObj = {
+        name: event.name,
+        desc: event.desc,
+        by: state.party.callsign,
+        timestamp: Date.now()
+      };
+
+      const nextRoomState = {
+        ...rm,
+        sabotage: sabObj,
+        roundPayload: updatedPayload
+      };
+
+      await RTDB.setRoom(state.party.roomCode, nextRoomState);
+      handlePartyRoomSnapshot(nextRoomState);
+    }
+
+    async function hostAdvancePartyRound() {
+      const rm = state.party.roomData;
+      if (!rm || !state.party.roomCode) return;
+
+      const currentRound = rm.currentRound || 1;
+      const maxCases = rm.totalCases || 10;
+
+      if (currentRound >= maxCases) {
+        const finishedRoom = {
+          ...rm,
+          status: "finished"
+        };
+        await RTDB.setRoom(state.party.roomCode, finishedRoom);
+        handlePartyRoomSnapshot(finishedRoom);
+        return;
+      }
+
+      const nextPt = generatePatientDossier();
+      const nextDeck = generateCardDeck(nextPt);
+
+      const nextRoom = {
+        ...rm,
+        currentRound: currentRound + 1,
+        submissions: {},
+        sabotage: null,
+        roundPayload: serializeRoundPayload(nextPt, nextDeck)
+      };
+
+      await RTDB.setRoom(state.party.roomCode, nextRoom);
+      handlePartyRoomSnapshot(nextRoom);
+    }
+
+    function renderPartySummary() {
+      const rm = state.party.roomData;
+      if (!rm) return;
+
+      document.getElementById("summaryRoomTag").textContent = `ROOM: ${rm.roomCode}`;
+      const sorted = Object.values(rm.players || {}).sort((a, b) => (b.score || 0) - (a.score || 0));
+
+      const topPlayer = sorted[0] || { name: "N/A", score: 0 };
+      document.getElementById("summaryWinnerHeadline").textContent =
+        `${topPlayer.name} — ${topPlayer.score || 0} PTS`;
+
+      const listEl = document.getElementById("summaryStandingsList");
+      listEl.innerHTML = "";
+      sorted.forEach((p, idx) => {
+        const acc = !p.total ? 100 : Math.round(((p.correct || 0) / p.total) * 100);
+        const row = document.createElement("div");
+        row.className = `p-4 flex items-center justify-between ${idx === 0 ? 'subtle-fill font-bold' : ''}`;
+        row.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="px-2 py-0.5 mono-border text-[10px]">#${idx + 1}</span>
+            <div>
+              <div>${p.name}</div>
+              <div class="text-[10px] muted-text font-normal">ACCURACY: ${acc}% (${p.correct || 0}/${p.total || 0} OPTIMAL)</div>
+            </div>
+          </div>
+          <span class="text-sm font-bold">${p.score || 0} PTS</span>
+        `;
+        listEl.appendChild(row);
+      });
+    }
+
+    function leaveOnlineParty() {
+      RTDB.unsubscribe();
+      state.party.roomCode = null;
+      state.party.roomData = null;
+      state.party.ActiveRoundHydrated = -1;
+      document.getElementById("partyEntryFeedback").classList.add("hidden");
+      switchPartySubView("entry");
+    }
+
+    /* ==========================================================================
+       8. AUTOCOMPLETE TYPE-IN ENGINE & FAIL-SAFE INITIALIZATION
+       ========================================================================== */
+    function initAutocomplete() {
+      const input = document.getElementById("rxCommandInput");
+      const list = document.getElementById("rxAutocompleteList");
+      if (!input || !list) return;
+
+      input.addEventListener("input", () => {
+        if (state.caseResolved) return;
+        const q = input.value.trim().toLowerCase();
+        if (!q) {
+          list.classList.add("hidden");
+          return;
+        }
+
+        const matches = PHARMACOPOEIA.filter(d =>
+          d.name.toLowerCase().includes(q) || d.class.toLowerCase().includes(q)
+        ).slice(0, 8);
+
+        list.innerHTML = "";
+        if (matches.length === 0) {
+          list.innerHTML = `<div class="p-3 text-xs muted-text">NO FORMULARY MATCH FOUND</div>`;
+          list.classList.remove("hidden");
+          return;
+        }
+
+        matches.forEach(drug => {
+          const row = document.createElement("button");
+          row.type = "button";
+          row.className = "w-full text-left px-3.5 py-2.5 text-xs btn-mono border-0 flex items-center justify-between";
+          row.innerHTML = `
+            <span class="font-bold">${drug.name}</span>
+            <span class="muted-text text-[11px]">${drug.class}</span>
+          `;
+          row.onclick = () => {
+            input.value = drug.name;
+            list.classList.add("hidden");
+            commitPrescription(drug);
+          };
+          list.appendChild(row);
+        });
+
+        list.classList.remove("hidden");
+      });
+
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !state.caseResolved) {
+          const q = input.value.trim().toLowerCase();
+          if (!q) return;
+          const exactOrFirst = PHARMACOPOEIA.find(d => d.name.toLowerCase() === q) ||
+                               PHARMACOPOEIA.find(d => d.name.toLowerCase().includes(q));
+          if (exactOrFirst) {
+            list.classList.add("hidden");
+            commitPrescription(exactOrFirst);
+          }
+        }
+      });
+    }
+
+    let appInitialized = false;
+
+    function initializeContradoseApp() {
+      if (appInitialized) return;
+      appInitialized = true;
+
+      try {
+        try {
+          const savedUrl = localStorage.getItem("contradose_rtdb_url");
+          if (savedUrl) state.party.customDbUrl = savedUrl;
+        } catch (e) {}
+
+        // Theme Switcher (Strict B/W vs W/B)
+        const themeBtn = document.getElementById("btnThemeToggle");
+        if (themeBtn) {
+          themeBtn.onclick = () => {
+            state.theme = state.theme === "light" ? "dark" : "light";
+            document.documentElement.setAttribute("data-theme", state.theme);
+            themeBtn.textContent = state.theme === "light" ? "W/B" : "B/W";
+          };
+        }
+
+        // Mode Toggle (Solo vs Pass & Play vs Online Party)
+        document.getElementById("btnModeSolo").onclick = () => {
+          if (state.mode === "solo") return;
+          RTDB.unsubscribe();
+          state.mode = "solo";
+          startNewRound();
+        };
+
+        document.getElementById("btnModeMulti").onclick = () => {
+          if (state.mode === "multi") return;
+          RTDB.unsubscribe();
+          state.mode = "multi";
+          startNewRound();
+        };
+
+        document.getElementById("btnModeParty").onclick = () => {
+          if (state.mode === "party") return;
+          state.mode = "party";
+          updateRTDBStatusBadge(Boolean(resolveRTDBBaseUrl()), resolveRTDBBaseUrl());
+          switchPartySubView(state.party.roomCode ? state.party.view : "entry");
+        };
+
+        const quickCreateBtn = document.getElementById("btnQuickCreateParty");
+        if (quickCreateBtn) {
+          quickCreateBtn.onclick = () => {
+            state.mode = "party";
+            updateRTDBStatusBadge(Boolean(resolveRTDBBaseUrl()), resolveRTDBBaseUrl());
+            switchPartySubView("entry");
+            const input = document.getElementById("partyCreateCallsignInput");
+            if (input) input.focus();
+          };
+        }
+
+        const quickJoinBtn = document.getElementById("btnQuickJoinParty");
+        if (quickJoinBtn) {
+          quickJoinBtn.onclick = () => {
+            state.mode = "party";
+            updateRTDBStatusBadge(Boolean(resolveRTDBBaseUrl()), resolveRTDBBaseUrl());
+            switchPartySubView("entry");
+            const codeInput = document.getElementById("partyJoinCodeInput");
+            if (codeInput) codeInput.focus();
+          };
+        }
+
+        // Online Party Controls
+        document.getElementById("btnCreatePartyRoom").onclick = createOnlinePartyRoom;
+        document.getElementById("btnJoinPartyRoom").onclick = joinOnlinePartyRoom;
+        document.getElementById("partyJoinCodeInput").addEventListener("keydown", (e) => {
+          if (e.key === "Enter") joinOnlinePartyRoom();
+        });
+
+        document.getElementById("btnLeaveLobby").onclick = leaveOnlineParty;
+        document.getElementById("btnLeavePartyBanner").onclick = leaveOnlineParty;
+        document.getElementById("btnExitPartyComplete").onclick = leaveOnlineParty;
+        document.getElementById("btnStartPartyMatch").onclick = hostStartPartyMatch;
+        document.getElementById("btnPartySabotage").onclick = triggerOnlinePartySabotage;
+
+        document.getElementById("btnReturnToLobby").onclick = async () => {
+          if (!state.party.roomCode || !state.party.roomData) return;
+          const backToLobby = {
+            ...state.party.roomData,
+            status: "lobby",
+            submissions: {},
+            sabotage: null
+          };
+          await RTDB.setRoom(state.party.roomCode, backToLobby);
+          handlePartyRoomSnapshot(backToLobby);
+        };
+
+        document.getElementById("btnCopyRoomCode").onclick = () => {
+          const code = state.party.roomCode || "";
+          if (!code) return;
+          const temp = document.createElement("textarea");
+          temp.value = code;
+          document.body.appendChild(temp);
+          temp.select();
+          document.execCommand("copy");
+          document.body.removeChild(temp);
+          const btn = document.getElementById("btnCopyRoomCode");
+          btn.textContent = "[COPIED!]";
+          setTimeout(() => { btn.textContent = "[COPY CODE]"; }, 1500);
+        };
+
+        // RTDB Config Modal Controls (GitHub Pages setup)
+        const rtdbModal = document.getElementById("rtdbConfigModal");
+        const openRtdbModal = () => {
+          document.getElementById("rtdbConfigInput").value = state.party.customDbUrl || "";
+          document.getElementById("rtdbModalStatus").textContent = resolveRTDBBaseUrl()
+            ? `ACTIVE ENDPOINT: ${resolveRTDBBaseUrl()}`
+            : "NO CUSTOM ENDPOINT SET (USING LOCAL MULTI-TAB SYNC).";
+          rtdbModal.classList.remove("hidden");
+        };
+        document.getElementById("btnConfigRTDB").onclick = openRtdbModal;
+        document.getElementById("btnOpenRTDBFromHub").onclick = openRtdbModal;
+        document.getElementById("btnCloseRTDBModal").onclick = () => rtdbModal.classList.add("hidden");
+
+        document.getElementById("btnSaveRTDBConfig").onclick = () => {
+          state.party.customDbUrl = document.getElementById("rtdbConfigInput").value.trim();
+          try {
+            localStorage.setItem("contradose_rtdb_url", state.party.customDbUrl);
+          } catch (e) {}
+          const resolved = resolveRTDBBaseUrl();
+          updateRTDBStatusBadge(Boolean(resolved), resolved);
+          rtdbModal.classList.add("hidden");
+        };
+
+        document.getElementById("btnClearRTDBConfig").onclick = () => {
+          state.party.customDbUrl = "";
+          try {
+            localStorage.removeItem("contradose_rtdb_url");
+          } catch (e) {}
+          document.getElementById("rtdbConfigInput").value = "";
+          updateRTDBStatusBadge(false);
+          rtdbModal.classList.add("hidden");
+        };
+
+        // Input Mode Toggle (Cards vs Type)
+        document.getElementById("btnInputCards").onclick = () => {
+          state.inputMode = "cards";
+          renderHeaderAndStats();
+        };
+
+        document.getElementById("btnInputType").onclick = () => {
+          state.inputMode = "type";
+          renderHeaderAndStats();
+          document.getElementById("rxCommandInput").focus();
+        };
+
+        // Next Case / Pass Turn / Host Party Advance Button
+        document.getElementById("btnNextAction").onclick = advanceTurn;
+
+        // Handover Overlay Confirm
+        document.getElementById("btnConfirmHandover").onclick = () => {
+          document.getElementById("handoverOverlay").classList.add("hidden");
+          startNewRound();
+        };
+
+        // Sabotage Trigger (Pass & Play)
+        document.getElementById("btnTriggerSabotage").onclick = triggerSabotageComplication;
+
+        // Pass & Play Roster Modal Controls
+        const rosterModal = document.getElementById("rosterModal");
+        document.getElementById("btnConfigPlayers").onclick = () => rosterModal.classList.remove("hidden");
+        document.getElementById("btnCloseRoster").onclick = () => rosterModal.classList.add("hidden");
+        document.getElementById("btnSaveRoster").onclick = () => {
+          const names = [
+            document.getElementById("p1Name").value.trim() || "DR. ONE",
+            document.getElementById("p2Name").value.trim() || "DR. TWO",
+            document.getElementById("p3Name").value.trim(),
+            document.getElementById("p4Name").value.trim()
+          ].filter(Boolean);
+
+          state.multi.players = names.map(n => ({ name: n.toUpperCase(), score: 0 }));
+          state.multi.activeIdx = 0;
+          state.multi.caseNum = 1;
+          rosterModal.classList.add("hidden");
+          startNewRound();
+        };
+
+        // Global Keyboard Shortcuts (1-4 for cards, Enter for next case)
+        window.addEventListener("keydown", (e) => {
+          const activeTag = document.activeElement ? document.activeElement.tagName : "";
+          if (activeTag === "INPUT" || activeTag === "TEXTAREA" || activeTag === "SELECT") {
+            if (e.key === "Enter" && state.caseResolved && activeTag === "INPUT" && document.activeElement.id === "rxCommandInput") {
+              e.preventDefault();
+              advanceTurn();
+            }
+            return;
+          }
+
+          const inActiveGame = state.mode !== "party" || state.party.view === "game";
+          if (!inActiveGame) return;
+
+          if (!state.caseResolved && state.inputMode === "cards") {
+            if (["1", "2", "3", "4"].includes(e.key)) {
+              const idx = parseInt(e.key, 10) - 1;
+              if (state.currentDeck[idx]) {
+                commitPrescription(state.currentDeck[idx]);
+              }
+            }
+          } else if (state.caseResolved && e.key === "Enter") {
+            e.preventDefault();
+            advanceTurn();
+          }
+        });
+
+        initAutocomplete();
+        startNewRound();
+      } catch (err) {
+        console.error("Initialization error:", err);
+      }
+    }
+
+    // Run immediately at end of body AND on DOMContentLoaded for fail-safe startup
+    initializeContradoseApp();
+    window.addEventListener("DOMContentLoaded", initializeContradoseApp);
+  </script>
+</body>
+</html>
